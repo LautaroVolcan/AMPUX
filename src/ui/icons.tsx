@@ -27,5 +27,6 @@ export const Icon = {
   up: () => <Svg><path d="M6 15l6-6 6 6" /></Svg>,
   down: () => <Svg><path d="M6 9l6 6 6-6" /></Svg>,
   cards: () => <Svg><rect x="3" y="4" width="8" height="7" rx="1" /><rect x="13" y="4" width="8" height="7" rx="1" /><rect x="3" y="13" width="8" height="7" rx="1" /><rect x="13" y="13" width="8" height="7" rx="1" /></Svg>,
+  layers: () => <Svg><path d="M12 3l9 5-9 5-9-5 9-5z" /><path d="M3 13l9 5 9-5" /></Svg>,
   grip: () => <Svg><circle cx="9" cy="7" r=".8" /><circle cx="15" cy="7" r=".8" /><circle cx="9" cy="12" r=".8" /><circle cx="15" cy="12" r=".8" /><circle cx="9" cy="17" r=".8" /><circle cx="15" cy="17" r=".8" /></Svg>,
 };

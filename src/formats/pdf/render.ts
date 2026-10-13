@@ -11,7 +11,7 @@ const SIZE = 12;
 const BASELINE = 9.2; // desde el tope de la línea hasta la línea base
 
 let fontCache: Promise<ArrayBuffer> | null = null;
-function loadFont(): Promise<ArrayBuffer> {
+export function loadFont(): Promise<ArrayBuffer> {
   fontCache ??= fetch(`${import.meta.env.BASE_URL}fonts/CourierPrime-Regular.ttf`).then((r) => {
     if (!r.ok) throw new Error('No se pudo cargar Courier Prime');
     return r.arrayBuffer();
@@ -23,6 +23,23 @@ export interface PdfOptions {
   titlePage: boolean;
   /** Bytes de la fuente (para tests); si no, se descarga de /fonts. */
   fontBytes?: ArrayBuffer | Uint8Array;
+  /** Solo las páginas con cambios de la revisión actual. */
+  onlyRevised?: boolean;
+  /** Encabezado de las páginas revisadas, p. ej. "Azul (13/10/2026)". */
+  revisionLabel?: string;
+}
+
+/** ¿El elemento fue modificado en la revisión actual? */
+export function isRevised(project: Project, index: number): boolean {
+  const el = project.elements[index];
+  return !!el?.revision && el.revision === project.settings.revisionColor;
+}
+
+/** Números de las páginas que tienen cambios de la revisión actual. */
+export function revisedPages(project: Project): number[] {
+  return paginate(project.elements, project.settings)
+    .pages.filter((pg) => pg.blocks.some((b) => b.elementIndex >= 0 && isRevised(project, b.elementIndex)))
+    .map((pg) => pg.number);
 }
 
 export async function renderPDF(project: Project, opts: PdfOptions): Promise<Uint8Array> {
@@ -43,14 +60,19 @@ export async function renderPDF(project: Project, opts: PdfOptions): Promise<Uin
   };
   const width = (s: string) => font.widthOfTextAtSize(s, SIZE);
 
-  if (opts.titlePage) drawTitlePage(pdf.addPage([W, H]), project.titlePage, font, W, H);
+  if (opts.titlePage && !opts.onlyRevised) drawTitlePage(pdf.addPage([W, H]), project.titlePage, font, W, H);
 
   const { pages } = paginate(project.elements, settings);
   for (const pg of pages) {
+    const changed = pg.blocks.some((b) => b.elementIndex >= 0 && isRevised(project, b.elementIndex));
+    if (opts.onlyRevised && !changed) continue;
     const page = pdf.addPage([W, H]);
-    if (pg.number > 1) {
-      const num = `${pg.number}.`;
-      text(page, num, geo.rightEdge * PT - width(num), 0.5 * PT);
+    const num = pg.number > 1 ? `${pg.number}.` : '';
+    if (num) text(page, num, geo.rightEdge * PT - width(num), 0.5 * PT);
+    if (changed && opts.revisionLabel) {
+      const label = opts.revisionLabel;
+      const right = geo.rightEdge * PT - (num ? width(num) + 0.3 * PT : 0);
+      text(page, label, right - width(label), 0.5 * PT);
     }
     for (const block of pg.blocks) {
       const m = block.synthetic ? METRICS.character : block.dual ? dualMetrics(block.dual, block.type) : METRICS[block.type];
@@ -64,6 +86,7 @@ export async function renderPDF(project: Project, opts: PdfOptions): Promise<Uin
           const y = H - top - BASELINE - 1.5;
           page.drawLine({ start: { x, y }, end: { x: x + width(s), y }, thickness: 0.6, color: ink });
         }
+        if (block.elementIndex >= 0 && isRevised(project, block.elementIndex)) text(page, '*', 7.9 * PT, top);
         if (i === 0 && block.sceneNumber && block.startOffset === 0 && settings.sceneNumbers !== 'none') {
           text(page, block.sceneNumber, 1.2 * PT - width(block.sceneNumber), top);
           if (settings.sceneNumbers === 'both') text(page, block.sceneNumber, (geo.rightEdge + 0.1) * PT, top);

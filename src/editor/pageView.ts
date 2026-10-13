@@ -69,7 +69,7 @@ function buildDecorations(state: EditorState, result: PaginationResult, settings
   const nodeAttrs = new Map<number, Record<string, string>>();
   const addAttr = (idx: number, key: string, value: string) => {
     const a = nodeAttrs.get(idx) ?? {};
-    a[key] = key === 'class' && a.class ? `${a.class} ${value}` : value;
+    a[key] = key === 'class' && a.class ? `${a.class} ${value}` : key === 'style' && a.style ? `${a.style}; ${value}` : value;
     nodeAttrs.set(idx, a);
   };
   if (settings.sceneNumbers !== 'none') {
@@ -130,6 +130,20 @@ function buildDecorations(state: EditorState, result: PaginationResult, settings
       addAttr(pair.left[1] - 1, 'style', `margin-bottom: calc(var(--line) * ${after})`);
     }
   }
+
+  // Revisión actual: asterisco en el margen derecho de cada línea del elemento.
+  const firstLines = new Map<number, number>();
+  for (const page of result.pages) {
+    for (const b of page.blocks) {
+      if (b.elementIndex >= 0 && !firstLines.has(b.elementIndex)) firstLines.set(b.elementIndex, b.lines.length);
+    }
+  }
+  doc.forEach((node, _o, idx) => {
+    if (!node.attrs.revision || node.attrs.revision !== settings.revisionColor) return;
+    const n = firstLines.get(idx) ?? 1;
+    addAttr(idx, 'class', 'rev');
+    addAttr(idx, 'style', `--rev-stars: "${Array(n).fill('*').join('\\A')}"`);
+  });
 
   for (const [idx, attrs] of nodeAttrs) {
     const pos = positions[idx];

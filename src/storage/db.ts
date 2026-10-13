@@ -1,8 +1,9 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import { DEFAULT_SETTINGS, newId, newProject, type Project } from '../types';
+import { DEFAULT_SETTINGS, newId, newProject, type Project, type Snapshot } from '../types';
 
 interface AmpuxDB extends DBSchema {
   projects: { key: string; value: Project; indexes: { updatedAt: number } };
+  snapshots: { key: string; value: Snapshot; indexes: { projectId: string } };
 }
 
 export interface ProjectMeta {
@@ -15,10 +16,17 @@ export interface ProjectMeta {
 let dbPromise: Promise<IDBPDatabase<AmpuxDB>> | null = null;
 
 function db() {
-  dbPromise ??= openDB<AmpuxDB>('ampux', 1, {
-    upgrade(database) {
-      const store = database.createObjectStore('projects', { keyPath: 'id' });
-      store.createIndex('updatedAt', 'updatedAt');
+  // Versión 2 agrega el historial. Las migraciones solo suman almacenes: nunca tocan los proyectos.
+  dbPromise ??= openDB<AmpuxDB>('ampux', 2, {
+    upgrade(database, oldVersion) {
+      if (oldVersion < 1) {
+        const store = database.createObjectStore('projects', { keyPath: 'id' });
+        store.createIndex('updatedAt', 'updatedAt');
+      }
+      if (oldVersion < 2) {
+        const snaps = database.createObjectStore('snapshots', { keyPath: 'id' });
+        snaps.createIndex('projectId', 'projectId');
+      }
     },
   });
   return dbPromise;
@@ -55,7 +63,34 @@ export async function saveProject(project: Project): Promise<void> {
 }
 
 export async function deleteProject(id: string): Promise<void> {
-  await (await db()).delete('projects', id);
+  const database = await db();
+  await database.delete('projects', id);
+  const snaps = await database.getAllKeysFromIndex('snapshots', 'projectId', id);
+  await Promise.all(snaps.map((k) => database.delete('snapshots', k)));
+}
+
+// --- Historial de versiones ---
+
+export async function listSnapshots(projectId: string): Promise<Snapshot[]> {
+  const all = await (await db()).getAllFromIndex('snapshots', 'projectId', projectId);
+  return all.sort((a, b) => b.createdAt - a.createdAt);
+}
+
+export async function saveSnapshot(project: Project, name: string): Promise<Snapshot> {
+  const snap: Snapshot = {
+    id: newId(),
+    projectId: project.id,
+    name,
+    createdAt: Date.now(),
+    pageCount: project.pageCount ?? 1,
+    project: structuredClone(project),
+  };
+  await (await db()).put('snapshots', snap);
+  return snap;
+}
+
+export async function deleteSnapshot(id: string): Promise<void> {
+  await (await db()).delete('snapshots', id);
 }
 
 export async function duplicateProject(id: string, suffix: string): Promise<Project | undefined> {

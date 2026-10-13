@@ -3,6 +3,8 @@ import type { EditorView } from 'prosemirror-view';
 export interface PopupItem {
   label: string;
   hint?: string;
+  /** Color de la muestra a la izquierda (desglose). */
+  color?: string;
 }
 
 /** Lista flotante junto al cursor (autocompletado y menú de tipos). */
@@ -58,7 +60,14 @@ export class Popup {
       const row = document.createElement('div');
       row.className = 'popup-item' + (i === this.index ? ' active' : '');
       row.dataset.i = String(i);
+      if (item.color) {
+        const dot = document.createElement('span');
+        dot.className = 'popup-dot';
+        dot.style.background = item.color;
+        row.appendChild(dot);
+      }
       const label = document.createElement('span');
+      label.className = 'popup-label';
       label.textContent = item.label;
       row.appendChild(label);
       if (item.hint) {

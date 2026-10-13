@@ -24,11 +24,39 @@ export const ELEMENT_TYPES: ElementType[] = [
 export type CardColor = 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple';
 export const CARD_COLORS: CardColor[] = ['red', 'orange', 'yellow', 'green', 'blue', 'purple'];
 
+/** Categorías de desglose de producción. */
+export type TagCategory =
+  | 'cast'
+  | 'extras'
+  | 'props'
+  | 'wardrobe'
+  | 'makeup'
+  | 'location'
+  | 'set'
+  | 'vehicles'
+  | 'animals'
+  | 'sfx'
+  | 'vfx'
+  | 'sound'
+  | 'music';
+
+export const TAG_CATEGORIES: TagCategory[] = [
+  'cast', 'extras', 'props', 'wardrobe', 'makeup', 'location', 'set', 'vehicles', 'animals', 'sfx', 'vfx', 'sound', 'music',
+];
+
+/** Etiqueta de desglose: rango [from, to) dentro del texto del elemento. */
 export interface TagRef {
-  category: string;
+  category: TagCategory;
   from: number;
   to: number;
 }
+
+/** Colores estándar de revisión, en orden. */
+export type RevisionColor =
+  | 'white' | 'blue' | 'pink' | 'yellow' | 'green' | 'goldenrod' | 'buff' | 'salmon' | 'cherry' | 'tan';
+export const REVISION_COLORS: RevisionColor[] = [
+  'white', 'blue', 'pink', 'yellow', 'green', 'goldenrod', 'buff', 'salmon', 'cherry', 'tan',
+];
 
 export interface ScriptElement {
   id: string;
@@ -41,7 +69,8 @@ export interface ScriptElement {
   synopsis?: string;
   color?: CardColor;
   tags?: TagRef[];
-  revision?: string;
+  /** Revisión en la que se modificó por última vez. */
+  revision?: RevisionColor;
 }
 
 export interface TitlePage {
@@ -66,6 +95,10 @@ export interface ProjectSettings {
   autoContd: boolean;
   /** Numeración bloqueada: las escenas nuevas reciben 5A, 5B… */
   lockedNumbers: boolean;
+  /** Modo revisión: los cambios se marcan con la revisión actual. */
+  revisionMode: boolean;
+  revisionColor: RevisionColor;
+  revisionDate: string;
 }
 
 export interface Project {
@@ -89,7 +122,20 @@ export const DEFAULT_SETTINGS: ProjectSettings = {
   sceneSpacing: 1,
   autoContd: true,
   lockedNumbers: false,
+  revisionMode: false,
+  revisionColor: 'blue',
+  revisionDate: '',
 };
+
+/** Versión guardada a mano (historial). */
+export interface Snapshot {
+  id: string;
+  projectId: string;
+  name: string;
+  createdAt: number;
+  pageCount: number;
+  project: Project;
+}
 
 export function newId(): string {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);

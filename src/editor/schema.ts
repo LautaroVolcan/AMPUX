@@ -1,5 +1,5 @@
-import { Schema, type NodeSpec, type Node as PMNode } from 'prosemirror-model';
-import { ELEMENT_TYPES, newId, type ElementType, type ScriptElement } from '../types';
+import { Schema, type MarkSpec, type NodeSpec, type Node as PMNode, type Mark } from 'prosemirror-model';
+import { ELEMENT_TYPES, newId, type ElementType, type ScriptElement, type TagCategory, type TagRef } from '../types';
 
 function elementNode(type: ElementType): NodeSpec {
   return {
@@ -12,6 +12,7 @@ function elementNode(type: ElementType): NodeSpec {
       dual: { default: false },
       synopsis: { default: null },
       color: { default: null },
+      revision: { default: null },
     },
     parseDOM: [
       {
@@ -37,7 +38,18 @@ const nodes: Record<string, NodeSpec> = {
 };
 for (const t of ELEMENT_TYPES) nodes[t] = elementNode(t);
 
-export const schema = new Schema({ nodes, marks: {} });
+const marks: Record<string, MarkSpec> = {
+  // Etiqueta de desglose. `excludes: ''` permite superponer categorías distintas.
+  tag: {
+    attrs: { category: {} },
+    excludes: '',
+    inclusive: false,
+    parseDOM: [{ tag: 'span[data-tag]', getAttrs: (dom) => ({ category: (dom as HTMLElement).getAttribute('data-tag') }) }],
+    toDOM: (mark) => ['span', { class: `tag tag-${mark.attrs.category}`, 'data-tag': mark.attrs.category }, 0],
+  },
+};
+
+export const schema = new Schema({ nodes, marks });
 
 export function nodeText(node: PMNode): string {
   return node.textBetween(0, node.content.size, undefined, '\n');
@@ -48,14 +60,52 @@ export function isElementEmpty(node: PMNode): boolean {
   return text === '' || (node.type.name === 'parenthetical' && text === '()');
 }
 
-function inlineContent(text: string) {
-  const parts = text.split('\n');
+function inlineContent(text: string, tags: TagRef[] = []) {
+  // Cortes en cada borde de etiqueta y en cada salto de línea.
+  const cuts = new Set<number>([0, text.length]);
+  for (const t of tags) {
+    cuts.add(Math.max(0, Math.min(text.length, t.from)));
+    cuts.add(Math.max(0, Math.min(text.length, t.to)));
+  }
+  for (let i = 0; i < text.length; i++) if (text[i] === '\n') cuts.add(i).add(i + 1);
+  const points = [...cuts].sort((a, b) => a - b);
   const out: PMNode[] = [];
-  parts.forEach((part, i) => {
-    if (i > 0) out.push(schema.nodes.hard_break.create());
-    if (part) out.push(schema.text(part));
-  });
+  for (let k = 0; k < points.length - 1; k++) {
+    const [a, b] = [points[k], points[k + 1]];
+    const seg = text.slice(a, b);
+    if (!seg) continue;
+    if (seg === '\n') {
+      out.push(schema.nodes.hard_break.create());
+      continue;
+    }
+    const marks = tags.filter((t) => t.from <= a && t.to >= b).map((t) => schema.marks.tag.create({ category: t.category }));
+    out.push(schema.text(seg, marks));
+  }
   return out;
+}
+
+/** Etiquetas de desglose de un nodo, como rangos de texto (adyacentes de la misma categoría se unen). */
+export function nodeTags(node: PMNode): TagRef[] {
+  const tags: TagRef[] = [];
+  const open = new Map<TagCategory, TagRef>();
+  let offset = 0;
+  node.forEach((child) => {
+    const size = child.isText ? child.text!.length : 1;
+    const cats = new Set(child.marks.filter((m: Mark) => m.type.name === 'tag').map((m: Mark) => m.attrs.category as TagCategory));
+    for (const [cat, ref] of open) {
+      if (!cats.has(cat)) open.delete(cat);
+      else ref.to = offset + size;
+    }
+    for (const cat of cats) {
+      if (!open.has(cat)) {
+        const ref = { category: cat, from: offset, to: offset + size };
+        open.set(cat, ref);
+        tags.push(ref);
+      }
+    }
+    offset += size;
+  });
+  return tags;
 }
 
 export function elementToNode(el: ScriptElement): PMNode {
@@ -66,8 +116,9 @@ export function elementToNode(el: ScriptElement): PMNode {
     dual: !!el.dual,
     synopsis: el.synopsis ?? null,
     color: el.color ?? null,
+    revision: el.revision ?? null,
   };
-  return type.create(attrs, inlineContent(el.text));
+  return type.create(attrs, inlineContent(el.text, el.tags));
 }
 
 export function elementsToDoc(elements: ScriptElement[]): PMNode {
@@ -83,6 +134,9 @@ export function docToElements(doc: PMNode): ScriptElement[] {
     if (node.attrs.dual) el.dual = true;
     if (node.attrs.synopsis) el.synopsis = node.attrs.synopsis;
     if (node.attrs.color) el.color = node.attrs.color;
+    if (node.attrs.revision) el.revision = node.attrs.revision;
+    const tags = nodeTags(node);
+    if (tags.length) el.tags = tags;
     out.push(el);
   });
   return out;

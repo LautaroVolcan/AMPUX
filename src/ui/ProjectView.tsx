@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useT } from '../i18n';
 import { getProject, saveProject } from '../storage/db';
-import type { CardColor, ElementType, Project, ProjectSettings, ScriptElement, TitlePage } from '../types';
+import type { CardColor, ElementType, Project, ProjectSettings, ScriptElement, Snapshot, TagCategory, TitlePage } from '../types';
+import { saveSnapshot } from '../storage/db';
+import { schema } from '../editor/schema';
+import { toCSV, type Table } from '../reports/reports';
+import { tableToPDF } from '../reports/pdf';
+import { BreakdownPanel, ReportsDialog, RevisionsDialog, VersionsDialog } from './Production';
 import { computeSceneNumbers } from '../pagination/numbering';
 import { serializeFDX } from '../formats/fdx/fdx';
 import { CardBoard, type Card } from './CardBoard';
@@ -10,9 +15,9 @@ import { moveScene, replaceDocument, scrollToElement, type SelectionInfo } from 
 import { setElementAttrs, setElementType, toggleDual } from '../editor/commands';
 import { serializeFountain } from '../formats/fountain/serialize';
 import { exportJSON, exportPlainText } from '../formats/text/plain';
-import { download, renderPDF } from '../formats/pdf/render';
+import { download, loadFont, renderPDF, revisedPages } from '../formats/pdf/render';
 import { ScriptEditor, type ScriptEditorHandle } from './ScriptEditor';
-import { TopBar, type ExportKind } from './TopBar';
+import { TopBar, type Dialog, type ExportKind } from './TopBar';
 import { SceneNavigator, type SceneItem } from './SceneNavigator';
 import { FindBar } from './FindBar';
 import { StatsDialog, TitlePageDialog } from './Dialogs';
@@ -57,7 +62,8 @@ function Workspace({ initial, prefs, setPrefs, onClose }: Props & { initial: Pro
   const [cards, setCards] = useState<Card[]>([]);
   const [findOpen, setFindOpen] = useState(false);
   const [docVersion, setDocVersion] = useState(0);
-  const [dialog, setDialog] = useState<null | 'settings' | 'titlePage' | 'stats'>(null);
+  const [dialog, setDialog] = useState<null | Dialog>(null);
+  const [lastResult, setLastResult] = useState<PaginationResult | null>(null);
 
   // --- Guardado (debounce de 1 s) ---
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -127,6 +133,7 @@ function Workspace({ initial, prefs, setPrefs, onClose }: Props & { initial: Pro
       }
       setPages(r.pages.length);
       setStatsElements(els);
+      setLastResult(r);
       const sceneItems = els.flatMap((e, i) =>
         e.type === 'scene'
           ? [{ index: i, id: e.id, heading: e.text.toLocaleUpperCase(), number: r.sceneNumbers.get(i) ?? '', page: r.elementPage[i] }]
@@ -241,6 +248,62 @@ function Workspace({ initial, prefs, setPrefs, onClose }: Props & { initial: Pro
     return () => window.removeEventListener('keydown', onKey);
   }, [flush]);
 
+  // --- Producción ---
+  const revisionLabel = () => {
+    const s = projectRef.current.settings;
+    return t.revisions.label(t.revisions.colors[s.revisionColor], s.revisionDate);
+  };
+
+  const exportChangedPages = async () => {
+    const p = currentProject();
+    const bytes = await renderPDF(p, { titlePage: false, onlyRevised: true, revisionLabel: revisionLabel() });
+    download(bytes as Uint8Array<ArrayBuffer>, `${baseName} - ${t.revisions.colors[p.settings.revisionColor]}.pdf`, 'application/pdf');
+  };
+
+  const clearRevisionMarks = () => {
+    const v = view();
+    if (!v) return;
+    const tr = v.state.tr;
+    v.state.doc.forEach((node, offset) => {
+      if (node.attrs.revision) tr.setNodeMarkup(offset, undefined, { ...node.attrs, revision: null });
+    });
+    if (tr.docChanged) v.dispatch(tr.setMeta('noRevision', true));
+  };
+
+  const exportReport = async (table: Table, kind: 'csv' | 'pdf') => {
+    const name = `${baseName} - ${table.title.split(' · ').pop()}`;
+    if (kind === 'csv') return download(toCSV(table), `${name}.csv`, 'text/csv;charset=utf-8');
+    const bytes = await tableToPDF(table, project.title, await loadFont());
+    download(bytes as Uint8Array<ArrayBuffer>, `${name}.pdf`, 'application/pdf');
+  };
+
+  const restoreVersion = async (snap: Snapshot) => {
+    const v = view();
+    if (!v) return;
+    await saveSnapshot({ ...currentProject(), pageCount: pagesRef.current }, t.versions.autoName(snap.name));
+    const old = snap.project;
+    update({ titlePage: old.titlePage, settings: { ...project.settings, ...old.settings }, notes: old.notes ?? {} });
+    replaceDocument(v, old.elements);
+    setDialog(null);
+  };
+
+  const removeTag = (elementId: string, category: TagCategory, from: number, to: number) => {
+    const v = view();
+    if (!v) return;
+    let pos = -1;
+    v.state.doc.forEach((node, offset) => {
+      if (node.attrs.id === elementId) pos = offset;
+    });
+    if (pos < 0) return;
+    v.dispatch(v.state.tr.removeMark(pos + 1 + from, pos + 1 + to, schema.marks.tag.create({ category })));
+  };
+
+  const toggleBreakdown = () => {
+    const on = !prefs.breakdown;
+    setPrefs(on ? { breakdown: true, showNotes: true, rightTab: 'breakdown' } : { breakdown: false });
+    view()?.focus();
+  };
+
   const sceneNote = selection.sceneId ? project.notes[selection.sceneId] ?? '' : '';
 
   return (
@@ -275,6 +338,10 @@ function Workspace({ initial, prefs, setPrefs, onClose }: Props & { initial: Pro
         onExport={doExport}
         onImport={doImport}
         onOpen={setDialog}
+        breakdown={prefs.breakdown}
+        onToggleBreakdown={toggleBreakdown}
+        revisionChip={project.settings.revisionMode ? t.revisions.chip(t.revisions.colors[project.settings.revisionColor]) : null}
+        revisionColor={project.settings.revisionColor}
       />
       <div className="workspace">
         {prefs.showNav && (
@@ -319,6 +386,7 @@ function Workspace({ initial, prefs, setPrefs, onClose }: Props & { initial: Pro
             mode={prefs.mode}
             zoom={prefs.zoom}
             typeLabels={prefs.typeLabels}
+            breakdown={prefs.breakdown}
             onChange={onChange}
             onPaginate={onPaginate}
             onSelection={setSelection}
@@ -330,9 +398,18 @@ function Workspace({ initial, prefs, setPrefs, onClose }: Props & { initial: Pro
         {prefs.showNotes && (
           <aside className="panel notes">
             <div className="panel-head">
-              <span className="panel-title">{t.notes.title}</span>
+              <div className="seg text">
+                <button className={prefs.rightTab === 'notes' ? 'on' : ''} onClick={() => setPrefs({ rightTab: 'notes' })}>
+                  {t.top.notes}
+                </button>
+                <button className={prefs.rightTab === 'breakdown' ? 'on' : ''} onClick={() => setPrefs({ rightTab: 'breakdown' })}>
+                  {t.breakdown.panel}
+                </button>
+              </div>
             </div>
-            {selection.sceneId ? (
+            {prefs.rightTab === 'breakdown' ? (
+              <BreakdownPanel elements={statsElements} sceneId={selection.sceneId} onRemove={removeTag} />
+            ) : selection.sceneId ? (
               <>
                 <div className="notes-scene">{scenes.find((s) => s.id === selection.sceneId)?.heading}</div>
                 <textarea
@@ -362,6 +439,27 @@ function Workspace({ initial, prefs, setPrefs, onClose }: Props & { initial: Pro
         <TitlePageDialog value={project.titlePage} onChange={(titlePage: TitlePage) => update({ titlePage })} onClose={() => setDialog(null)} />
       )}
       {dialog === 'stats' && <StatsDialog elements={statsElements} pages={pages} onClose={() => setDialog(null)} />}
+      {dialog === 'reports' && (
+        <ReportsDialog elements={statsElements} result={lastResult} onExport={exportReport} onClose={() => setDialog(null)} />
+      )}
+      {dialog === 'revisions' && (
+        <RevisionsDialog
+          settings={project.settings}
+          onSettings={changeSettings}
+          changedPages={revisedPages(currentProject())}
+          onExportChanged={exportChangedPages}
+          onClear={clearRevisionMarks}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog === 'versions' && (
+        <VersionsDialog
+          current={() => ({ ...currentProject(), pageCount: pagesRef.current, updatedAt: Date.now() })}
+          onRestore={restoreVersion}
+          onDownload={(s) => download(exportJSON(s.project), `${baseName} - ${safeFilename(s.name)}.json`, 'application/json')}
+          onClose={() => setDialog(null)}
+        />
+      )}
     </div>
   );
 }

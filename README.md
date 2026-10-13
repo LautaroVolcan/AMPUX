@@ -1,5 +1,7 @@
 # AMPUX
 
+**App publicada:** https://lautarovolcan.github.io/AMPUX/ (cada push a `main` corre los tests, compila y publica con GitHub Actions).
+
 Editor de guiones con formato estándar de la industria. Escribís y el editor formatea solo cada elemento (escena, acción, personaje, diálogo…), con Tab/Enter para pasar de uno a otro. Funciona en el navegador, guarda todo localmente (IndexedDB) y se puede instalar como app (PWA).
 
 ## Empezar
@@ -34,7 +36,8 @@ src/
                 autocompletado, vista paginada y buscar/reemplazar
   pagination/   paginate() — función pura que alimenta la vista y el PDF
   formats/      Fountain y Final Draft .fdx (import/export), PDF (pdf-lib + Courier Prime), TXT, JSON
-  storage/      IndexedDB
+  reports/      reportes de producción (desglose, personajes, locaciones, día/noche) → CSV / PDF
+  storage/      IndexedDB (proyectos e historial de versiones)
   ui/           React: inicio, barra superior, navegador de escenas, paneles, diálogos
   i18n/         español / inglés
 tests/          Vitest
@@ -45,6 +48,6 @@ tests/          Vitest
 - **Fase 1** (editor base, paginación, PDF, Fountain) — hecha.
 - **Fase 2** (múltiples proyectos, navegador con drag & drop, portada, buscar/reemplazar, notas, modo borrador, modo oscuro, zoom, estadísticas) — hecha.
 - **Fase 3** (tablero de tarjetas con sinopsis y color, diálogo dual, import/export `.fdx`, numeración de escenas bloqueada) — hecha.
-- **Fase 4** (desglose, reportes, revisiones, versiones) — pendiente.
+- **Fase 4** (desglose con etiquetas, reportes CSV/PDF, modo revisión con colores y asteriscos, exportar páginas cambiadas, historial de versiones) — hecha. Todo vive en el menú **Producción** de la barra superior.
 
 Fuente: [Courier Prime](https://github.com/quoteunquoteapps/CourierPrime) (SIL Open Font License).

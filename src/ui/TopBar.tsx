@@ -24,8 +24,15 @@ interface Props {
   onFind: () => void;
   onExport: (kind: ExportKind) => void;
   onImport: () => void;
-  onOpen: (dialog: 'settings' | 'titlePage' | 'stats') => void;
+  onOpen: (dialog: Dialog) => void;
+  breakdown: boolean;
+  onToggleBreakdown: () => void;
+  /** Texto del indicador de revisión, si el modo revisión está activo. */
+  revisionChip: string | null;
+  revisionColor: string;
 }
+
+export type Dialog = 'settings' | 'titlePage' | 'stats' | 'reports' | 'revisions' | 'versions';
 
 export type ExportKind = 'pdf' | 'pdfNoTitle' | 'fountain' | 'fdx' | 'txt' | 'json';
 
@@ -34,6 +41,13 @@ export const ZOOMS = [0.75, 0.9, 1, 1.1, 1.25, 1.5];
 export function TopBar(p: Props) {
   const t = useT();
   const [exportOpen, setExportOpen] = useState(false);
+  const [prodOpen, setProdOpen] = useState(false);
+  useEffect(() => {
+    if (!prodOpen) return;
+    const close = () => setProdOpen(false);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [prodOpen]);
   const [title, setTitle] = useState(p.title);
   useEffect(() => setTitle(p.title), [p.title]);
   useEffect(() => {
@@ -86,6 +100,17 @@ export function TopBar(p: Props) {
           {t.top.dual}
         </button>
         <span className="tb-meta">{t.top.pages(p.pages)}</span>
+        {p.breakdown && (
+          <button className="chip on" onClick={p.onToggleBreakdown} title={t.breakdown.mode}>
+            {t.breakdown.chip} ×
+          </button>
+        )}
+        {p.revisionChip && (
+          <button className="chip on rev-chip" onClick={() => p.onOpen('revisions')}>
+            <span className={`rev-dot rv-${p.revisionColor}`} />
+            {p.revisionChip}
+          </button>
+        )}
         <span className={`tb-meta save-state${p.saving ? ' saving' : ''}`}>
           <span className="dot" />
           {p.saving ? t.top.saving : t.top.saved}
@@ -129,6 +154,30 @@ export function TopBar(p: Props) {
         <button className="icon-btn" onClick={p.onImport} title={t.top.import} aria-label={t.top.import}>
           <Icon.upload />
         </button>
+        <div className="menu-anchor">
+          <button
+            className={`icon-btn${prodOpen ? ' on' : ''}`}
+            title={t.production.menu}
+            aria-label={t.production.menu}
+            onClick={(e) => {
+              e.stopPropagation();
+              setProdOpen(!prodOpen);
+            }}
+          >
+            <Icon.layers />
+          </button>
+          {prodOpen && (
+            <div className="menu right">
+              <button onClick={p.onToggleBreakdown}>
+                <span className="menu-check">{p.breakdown ? '✓' : ''}</span>
+                {t.breakdown.mode}
+              </button>
+              <button onClick={() => p.onOpen('reports')}><span className="menu-check" />{t.production.reports}</button>
+              <button onClick={() => p.onOpen('revisions')}><span className="menu-check" />{t.production.revisions}</button>
+              <button onClick={() => p.onOpen('versions')}><span className="menu-check" />{t.production.versions}</button>
+            </div>
+          )}
+        </div>
         <div className="menu-anchor">
           <button
             className="btn"

@@ -47,3 +47,16 @@ Decisiones que el spec no fijaba, tomadas eligiendo la opción más simple.
 - **Fountain**: `= texto` se guarda como sinopsis de la escena anterior y se exporta igual.
 - **FDX**: el acto se exporta como `New Act` (y se importan `New Act`, `Act Break` y `End of Act`). Los tipos desconocidos pasan a Acción. Los estilos de texto (negrita, etc.) se descartan. Para la portada se toman los textos centrados en orden (título, crédito, autor, fuente), el alineado a la izquierda como contacto y el alineado a la derecha como fecha.
 - Los tests de `.fdx` corren con jsdom, porque happy-dom no parsea XML.
+
+## Fase 4
+- **Desglose**: las etiquetas son *marks* de ProseMirror (`tag`, con `excludes: ''` para que se puedan superponer categorías). Así siguen al texto cuando se edita alrededor. En el modelo se guardan como `tags: [{category, from, to}]` sobre el texto del elemento.
+- 13 categorías fijas: Elenco, Extras, Utilería, Vestuario, Maquillaje y peluquería, Locación, Escenografía, Vehículos, Animales, Efectos especiales, Efectos visuales, Sonido, Música.
+- Las etiquetas solo se ven resaltadas en **modo desglose**, para que la vista normal siga limpia. En ese modo, al seleccionar texto aparece la paleta de categorías y, con el cursor sobre una etiqueta, la opción de quitarla.
+- Las etiquetas no se exportan a Fountain ni a FDX (Fountain no las soporta; el `TagData` de FDX queda pendiente). El backup JSON y el historial sí las conservan.
+- **Reportes**: el largo de cada escena se mide en octavos de página a partir de las líneas que ocupa en la paginación real (mínimo 1/8). En el reporte de personajes también entra el elenco etiquetado que no habla. El CSV lleva BOM para que Excel abra bien los acentos. El PDF de reportes es una tabla monoespaciada apaisada.
+- **Revisiones**: granularidad por *elemento*, no por línea. Si cambia el texto o el tipo de un elemento con el modo revisión activo, el elemento entero queda marcado con el color actual y cada una de sus líneas lleva asterisco. Si se borra un elemento, se marca el que queda en su lugar. Etiquetar, mover escenas, importar y restaurar versiones no marcan.
+- Los asteriscos solo se muestran para la revisión *actual*. Las marcas de revisiones anteriores quedan guardadas pero no se ven.
+- 10 colores en el orden estándar: Blanco, Azul, Rosa, Amarillo, Verde, Dorado, Beige, Salmón, Cereza, Canela.
+- "Exportar páginas cambiadas" genera un PDF solo con las páginas que tienen cambios de la revisión actual, conservando su numeración, con "Rev. Color (fecha)" en el encabezado y sin portada.
+- **Versiones**: se guardan en un almacén nuevo de IndexedDB (`snapshots`). La base pasó a la versión 2: la migración solo agrega ese almacén y no toca los proyectos guardados (hay un test de compatibilidad, y se probó en el navegador abriendo una base v1 con datos). Restaurar guarda primero el estado actual como versión ("Antes de restaurar…"), así nunca se pierde nada. Borrar un proyecto borra también sus versiones.
+- **Deploy**: GitHub Pages publica el `dist/` que genera un workflow de GitHub Actions (`.github/workflows/deploy.yml`), con `VITE_BASE=/AMPUX/`.

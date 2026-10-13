@@ -9,9 +9,11 @@ export interface Prefs {
   showNav: boolean;
   showNotes: boolean;
   mode: 'page' | 'draft' | 'cards';
+  breakdown: boolean;
+  rightTab: 'notes' | 'breakdown';
 }
 
-const DEFAULTS: Prefs = { theme: 'system', uiLang: 'es', typeLabels: false, zoom: 1, showNav: true, showNotes: false, mode: 'page' };
+const DEFAULTS: Prefs = { theme: 'system', uiLang: 'es', typeLabels: false, zoom: 1, showNav: true, showNotes: false, mode: 'page', breakdown: false, rightTab: 'notes' };
 const KEY = 'ampux.prefs';
 
 function load(): Prefs {

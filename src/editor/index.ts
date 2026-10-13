@@ -3,7 +3,9 @@ import { EditorView } from 'prosemirror-view';
 import { history, undo, redo } from 'prosemirror-history';
 import { keymap } from 'prosemirror-keymap';
 import { baseKeymap } from 'prosemirror-commands';
-import type { ElementType, Language, ProjectSettings, ScriptElement } from '../types';
+import type { ElementType, Language, ProjectSettings, RevisionColor, ScriptElement, TagCategory } from '../types';
+import { revisionPlugin } from './revision';
+import { breakdownPlugin } from './breakdown';
 import type { PaginationResult } from '../pagination/paginate';
 import { docToElements, elementsToDoc, nodeText } from './schema';
 import { scriptKeymap } from './keymap';
@@ -27,6 +29,10 @@ export interface EditorCallbacks {
   getMode: () => 'page' | 'draft';
   getLang: () => Language;
   typeLabel: (t: ElementType) => string;
+  tagLabel: (c: TagCategory) => string;
+  removeTagLabel: (c?: TagCategory) => string;
+  getBreakdown: () => boolean;
+  getRevision: () => RevisionColor | null;
   onChange: (elements: ScriptElement[]) => void;
   onPaginate: (result: PaginationResult, elements: ScriptElement[]) => void;
   onSelection: (info: SelectionInfo) => void;
@@ -57,6 +63,7 @@ export function createEditor(mount: HTMLElement, elements: ScriptElement[], cb: 
   const state = EditorState.create({
     doc: elementsToDoc(elements),
     plugins: [
+      breakdownPlugin({ isActive: cb.getBreakdown, label: cb.tagLabel, removeLabel: cb.removeTagLabel }),
       autocompletePlugin(cb.getLang),
       menu.plugin,
       scriptKeymap({ openTypeMenu: menu.open, save: cb.onSave, find: cb.onFind }),
@@ -65,6 +72,7 @@ export function createEditor(mount: HTMLElement, elements: ScriptElement[], cb: 
       keymap(baseKeymap),
       autodetectPlugin(),
       idsPlugin(),
+      revisionPlugin(cb.getRevision),
       findPlugin(),
       pageViewPlugin({ getSettings: cb.getSettings, getMode: cb.getMode, onResult: cb.onPaginate }),
     ],
@@ -135,7 +143,7 @@ export function moveScene(view: EditorView, from: number, to: number) {
 
 export function replaceDocument(view: EditorView, elements: ScriptElement[]) {
   const doc = elementsToDoc(elements);
-  const tr = view.state.tr.replaceWith(0, view.state.doc.content.size, doc.content);
+  const tr = view.state.tr.replaceWith(0, view.state.doc.content.size, doc.content).setMeta('noRevision', true);
   view.dispatch(tr);
 }
 

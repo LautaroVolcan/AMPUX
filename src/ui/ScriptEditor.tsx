@@ -17,6 +17,7 @@ interface Props {
   mode: 'page' | 'draft' | 'cards';
   zoom: number;
   typeLabels: boolean;
+  breakdown: boolean;
   onChange: (elements: ScriptElement[]) => void;
   onPaginate: (result: PaginationResult, elements: ScriptElement[]) => void;
   onSelection: (info: SelectionInfo) => void;
@@ -40,6 +41,10 @@ export const ScriptEditor = forwardRef<ScriptEditorHandle, Props>(function Scrip
       getMode: () => (latest.current.props.mode === 'draft' ? 'draft' : 'page'),
       getLang: () => latest.current.props.settings.language,
       typeLabel: (type) => latest.current.t.types[type],
+      tagLabel: (c) => latest.current.t.tags[c],
+      removeTagLabel: (c) => latest.current.t.breakdown.remove(c ? latest.current.t.tags[c] : undefined),
+      getBreakdown: () => latest.current.props.breakdown,
+      getRevision: () => (latest.current.props.settings.revisionMode ? latest.current.props.settings.revisionColor : null),
       onChange: (els) => latest.current.props.onChange(els),
       onPaginate: (r, els) => latest.current.props.onPaginate(r, els),
       onSelection: (info) => latest.current.props.onSelection(info),
@@ -73,6 +78,8 @@ export const ScriptEditor = forwardRef<ScriptEditorHandle, Props>(function Scrip
     props.typeLabels ? 'labels' : '',
     settings.sceneNumbers !== 'none' ? `sn-${settings.sceneNumbers}` : '',
     settings.sceneSpacing === 2 ? 'spacing-2' : '',
+    props.breakdown ? 'breakdown' : '',
+    `rev-${settings.revisionColor}`,
   ].join(' ');
 
   return (
