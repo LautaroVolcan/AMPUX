@@ -383,6 +383,74 @@ textarea.input {
   min-width: 150px;
 }
 
+/* Carpetas */
+.crumb {
+  padding: 0 4px;
+  margin-left: -4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+}
+.crumb:hover,
+.crumb.drop {
+  background: var(--hover);
+  color: var(--text);
+}
+.crumb-sep {
+  margin: 0 8px;
+  color: var(--faint);
+}
+.folders {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 36px;
+}
+.folder {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.folder:hover {
+  background: var(--hover);
+}
+.folder.drop {
+  border-color: var(--muted);
+  background: var(--hover);
+}
+.folder-body {
+  flex: 1;
+  min-width: 0;
+  color: var(--text);
+}
+.folder-menu-btn {
+  opacity: 0;
+}
+.folder:hover .folder-menu-btn {
+  opacity: 1;
+}
+.folder .card-menu {
+  top: 44px;
+}
+.menu button.current {
+  font-weight: 500;
+}
+.menu button.current::after {
+  content: ' ✓';
+  color: var(--muted);
+}
+
 /* ---------- Layout del editor ---------- */
 .app {
   height: 100%;
@@ -462,6 +530,9 @@ textarea.input {
 }
 .save-state.saving .dot {
   background: var(--faint);
+}
+.save-state.offline .dot {
+  background: #d4a23c;
 }
 .zoom {
   display: inline-flex;

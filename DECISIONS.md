@@ -60,3 +60,11 @@ Decisiones que el spec no fijaba, tomadas eligiendo la opción más simple.
 - "Exportar páginas cambiadas" genera un PDF solo con las páginas que tienen cambios de la revisión actual, conservando su numeración, con "Rev. Color (fecha)" en el encabezado y sin portada.
 - **Versiones**: se guardan en un almacén nuevo de IndexedDB (`snapshots`). La base pasó a la versión 2: la migración solo agrega ese almacén y no toca los proyectos guardados (hay un test de compatibilidad, y se probó en el navegador abriendo una base v1 con datos). Restaurar guarda primero el estado actual como versión ("Antes de restaurar…"), así nunca se pierde nada. Borrar un proyecto borra también sus versiones.
 - **Deploy**: GitHub Pages publica el `dist/` que genera un workflow de GitHub Actions (`.github/workflows/deploy.yml`), con `VITE_BASE=/AMPUX/`.
+
+## Nube y carpetas
+- **Supabase** sin login: la URL y la clave pública (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) se compilan en la app. Todos ven y editan todo. Sin esas variables la app funciona como antes, solo en el navegador. Esquema en `supabase/schema.sql`.
+- **Nada se borra de verdad**: no hay política `DELETE`; borrar un guion, carpeta o versión marca `deleted = true` (se recupera desde el panel de Supabase).
+- **IndexedDB sigue siendo la copia local** (local-first). Guardar escribe en el navegador y encola la subida (como mucho cada 2 s; al ocultar la pestaña se sube ya). Sin conexión, reintenta cada 15 s y el indicador dice "Guardado en este equipo".
+- **Gana la copia más nueva** según `updatedAt`, al listar y al abrir. Si dos personas editan el mismo guion a la vez, gana el último que guarda (no hay fusión).
+- **Migración**: al abrir la pantalla de Proyectos, los guiones que solo están en el navegador se suben, salvo los que no tienen texto (se descartan). Las versiones locales se suben una vez por sesión.
+- **Carpetas**: un solo nivel, `folderId` opcional en el proyecto (columna `folder_id` en la nube). La base local pasó a la versión 3, que solo agrega el almacén `folders`. Borrar una carpeta pasa sus guiones a la raíz. Se mueve con el menú (Mover a…) o arrastrando la tarjeta a la carpeta o a "Proyectos".

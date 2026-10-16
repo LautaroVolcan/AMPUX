@@ -20,6 +20,7 @@ export const Icon = {
   draft: () => <Svg><path d="M4 6h16M4 12h16M4 18h10" /></Svg>,
   title: () => <Svg><rect x="5" y="3" width="14" height="18" rx="1" /><path d="M9 9h6M10 13h4" /></Svg>,
   stats: () => <Svg><path d="M5 20V10M12 20V4M19 20v-7" /></Svg>,
+  folder: () => <Svg><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></Svg>,
   plus: () => <Svg><path d="M12 5v14M5 12h14" /></Svg>,
   minus: () => <Svg><path d="M5 12h14" /></Svg>,
   more: () => <Svg><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></Svg>,

@@ -13,6 +13,14 @@ npm test         # tests de Fountain, paginación y flujo Tab/Enter
 npm run build    # build de producción en dist/
 ```
 
+### Nube (Supabase)
+
+1. Crear un proyecto en supabase.com y correr `supabase/schema.sql` en el SQL Editor.
+2. Local: copiar `.env.example` como `.env.local` y completar URL y clave pública (Project Settings → API).
+3. Publicada: cargar las mismas dos como *variables* del repo (`SUPABASE_URL`, `SUPABASE_ANON_KEY`); el workflow las usa al compilar.
+
+Sin esas variables la app guarda solo en el navegador.
+
 ## Cómo se escribe
 
 | Tecla | Qué hace |

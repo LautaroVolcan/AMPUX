@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useT } from '../i18n';
-import { getProject, saveProject } from '../storage/db';
+import { flushPushes, getProject, saveProject } from '../storage/db';
 import type { CardColor, ElementType, Project, ProjectSettings, ScriptElement, Snapshot, TagCategory, TitlePage } from '../types';
 import { saveSnapshot } from '../storage/db';
 import { schema } from '../editor/schema';
@@ -85,13 +85,13 @@ function Workspace({ initial, prefs, setPrefs, onClose }: Props & { initial: Pro
   }, [flush]);
 
   useEffect(() => {
-    const onHide = () => document.visibilityState === 'hidden' && flush();
+    const onHide = () => document.visibilityState === 'hidden' && flush().then(flushPushes);
     window.addEventListener('beforeunload', flush);
     document.addEventListener('visibilitychange', onHide);
     return () => {
       window.removeEventListener('beforeunload', flush);
       document.removeEventListener('visibilitychange', onHide);
-      flush();
+      flush().then(flushPushes);
     };
   }, [flush]);
 

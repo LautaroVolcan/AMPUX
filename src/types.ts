@@ -110,8 +110,18 @@ export interface Project {
   /** Notas por escena, indexadas por id del encabezado. */
   notes: Record<string, string>;
   pageCount?: number;
+  /** Carpeta en la pantalla de Proyectos (sin carpeta = raíz). */
+  folderId?: string;
   updatedAt: number;
   createdAt: number;
+}
+
+/** Carpeta para agrupar guiones (un solo nivel). */
+export interface Folder {
+  id: string;
+  name: string;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export const DEFAULT_SETTINGS: ProjectSettings = {

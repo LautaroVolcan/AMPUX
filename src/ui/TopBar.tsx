@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useT } from '../i18n';
 import { ELEMENT_TYPES, type ElementType } from '../types';
 import { Icon } from './icons';
+import { getSyncStatus, onSyncStatus } from '../storage/db';
 
 interface Props {
   title: string;
@@ -111,10 +112,7 @@ export function TopBar(p: Props) {
             {p.revisionChip}
           </button>
         )}
-        <span className={`tb-meta save-state${p.saving ? ' saving' : ''}`}>
-          <span className="dot" />
-          {p.saving ? t.top.saving : t.top.saved}
-        </span>
+        <SaveState saving={p.saving} />
       </div>
 
       <div className="tb-group tb-right">
@@ -206,5 +204,20 @@ export function TopBar(p: Props) {
         </button>
       </div>
     </header>
+  );
+}
+
+/** Guardado local + subida a la nube. */
+function SaveState({ saving }: { saving: boolean }) {
+  const t = useT();
+  const [sync, setSync] = useState(getSyncStatus);
+  useEffect(() => onSyncStatus(setSync), []);
+  const busy = saving || sync === 'pending';
+  const offline = !busy && sync === 'error';
+  return (
+    <span className={`tb-meta save-state${busy ? ' saving' : ''}${offline ? ' offline' : ''}`} title={offline ? t.top.offlineHint : undefined}>
+      <span className="dot" />
+      {busy ? t.top.saving : offline ? t.top.savedLocal : t.top.saved}
+    </span>
   );
 }

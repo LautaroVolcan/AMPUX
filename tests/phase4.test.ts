@@ -5,7 +5,7 @@ import { revisionPlugin } from '../src/editor/revision';
 import { idsPlugin } from '../src/editor/autodetect';
 import { paginate } from '../src/pagination/paginate';
 import { characterReport, formatEighths, locationReport, parseHeading, sceneReports, timeReport, toCSV } from '../src/reports/reports';
-import { normalizeProject } from '../src/storage/db';
+import { isBlankProject, normalizeProject } from '../src/storage/db';
 import { DEFAULT_SETTINGS, type ElementType, type ScriptElement } from '../src/types';
 
 let n = 0;
@@ -126,5 +126,19 @@ describe('Compatibilidad con proyectos guardados antes de la fase 4', () => {
     const p = normalizeProject(old);
     expect(p.elements).toEqual([{ id: 'a', type: 'scene', text: 'INT. A' }]);
     expect(p.settings).toMatchObject({ pageSize: 'a4', language: 'en', revisionMode: false, revisionColor: 'blue', lockedNumbers: false });
+  });
+});
+
+describe('carpetas y nube', () => {
+  it('un guion sin texto se considera vacío (no se sube a Supabase)', () => {
+    const blank = normalizeProject({ title: 'Sin título' });
+    expect(isBlankProject(blank)).toBe(true);
+    const written = normalizeProject({ title: 'Sin título', elements: [{ id: 'a', type: 'scene', text: 'INT. CASA - DÍA' }] });
+    expect(isBlankProject(written)).toBe(false);
+  });
+
+  it('normalizeProject conserva la carpeta y no la inventa en proyectos viejos', () => {
+    expect(normalizeProject({ title: 'Viejo' }).folderId).toBeUndefined();
+    expect(normalizeProject({ title: 'Nuevo', folderId: 'f1' }).folderId).toBe('f1');
   });
 });
