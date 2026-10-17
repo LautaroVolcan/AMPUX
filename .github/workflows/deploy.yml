@@ -27,7 +27,7 @@ jobs:
       - run: npm test
       - run: npm run build
         env:
-          VITE_BASE: /AMPUX/
+          VITE_BASE: /
           # Variables del repo (Settings → Secrets and variables → Actions → Variables). Sin ellas, la app guarda solo en el navegador.
           VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
