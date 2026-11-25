@@ -92,3 +92,13 @@ Decisiones que el spec no fijaba, tomadas eligiendo la opción más simple.
 ## Barra superior
 - El título no mueve el centro: izquierda y derecha son `flex: 1 1 0` (reparten el sobrante en partes iguales); la derecha no baja de su contenido y la izquierda se achica, cortando el título con "…". El estado de guardado tiene ancho fijo para que "Guardando…" no haga saltar nada.
 - En pantallas medianas se compacta lo accesorio, en este orden: ≤1360 px se ocultan la palabra AMPUX, el texto de "Exportar" y el de "Guardado" (queda el punto, con el texto como *tooltip*); ≤1180 px el zoom y las páginas.
+
+## Login
+- **Supabase Auth** con usuario y contraseña. Las contraseñas las guarda Supabase (cifradas, en `auth.users`); AMPUX nunca las ve ni las guarda.
+- Supabase pide email: el usuario `lautaro` es `lautaro@lautaroferrandi.com` (dominio propio; como las cuentas se confirman a mano y no hay recuperación por mail, nunca se le escribe a esa dirección). Si alguien escribe un email completo, se usa tal cual. No hay "olvidé mi contraseña": se cambia desde el panel.
+- **Cuentas solo a mano** desde el panel; el registro abierto está apagado. Todos los usuarios ven y editan todo (como antes del login).
+- Reglas: `leer`, `crear` y `editar` pasan de `anon, authenticated` a solo `authenticated` (`supabase/login.sql`). Sigue sin haber `DELETE`. Sin sesión, la clave pública ya no alcanza para ver nada.
+- Sin Supabase configurado (desarrollo local) no hay login y la app es solo local, como antes.
+- **Local-first con login**: la sesión se guarda en el navegador (`localStorage`, clave `ampux.auth`). Si hay una sesión guardada se entra enseguida, aunque no haya conexión o el token esté vencido; se trabaja contra la copia local y, al volver la red, Supabase renueva el token solo (después de un intento fallido espera hasta ~1 min, por su propio *cooldown*) y se sube lo pendiente. Solo se vuelve al login si la sesión deja de estar guardada: se tocó "Salir" o Supabase la invalidó (cuenta borrada, contraseña cambiada).
+- "Salir" sube lo pendiente y cierra la sesión de este navegador. La copia local de los guiones queda (todos los usuarios ven todo de todas formas).
+- Probado con un Supabase simulado en Playwright: entrar, contraseña incorrecta, recargar, salir, sin conexión con el token vencido, reconexión (renueva y sube) y sesión invalidada (vuelve al login).

@@ -1,7 +1,8 @@
 -- AMPUX — esquema de Supabase.
 -- Pegar entero en el SQL Editor del proyecto y ejecutar (se puede correr más de una vez).
 --
--- No hay login: todos los que usan la app ven y editan todo. Por eso:
+-- Hace falta login (Supabase Auth): solo los usuarios con sesión (rol `authenticated`) leen y escriben.
+-- Las cuentas se crean a mano desde el panel (el registro abierto está apagado). Todos los usuarios ven y editan todo.
 --   - nadie puede borrar filas (no hay política DELETE); borrar en la app solo marca `deleted = true`,
 --     así un guion borrado por error se puede recuperar desde el panel de Supabase.
 
@@ -47,8 +48,8 @@ begin
     execute format('drop policy if exists "leer" on public.%I', t);
     execute format('drop policy if exists "crear" on public.%I', t);
     execute format('drop policy if exists "editar" on public.%I', t);
-    execute format('create policy "leer" on public.%I for select to anon, authenticated using (true)', t);
-    execute format('create policy "crear" on public.%I for insert to anon, authenticated with check (true)', t);
-    execute format('create policy "editar" on public.%I for update to anon, authenticated using (true) with check (true)', t);
+    execute format('create policy "leer" on public.%I for select to authenticated using (true)', t);
+    execute format('create policy "crear" on public.%I for insert to authenticated with check (true)', t);
+    execute format('create policy "editar" on public.%I for update to authenticated using (true) with check (true)', t);
   end loop;
 end $$;

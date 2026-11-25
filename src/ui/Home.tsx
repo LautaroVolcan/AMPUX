@@ -16,6 +16,7 @@ import {
 import { newId, newProject, type Folder } from '../types';
 import { fileToProject, IMPORT_ACCEPT, pickFile } from './files';
 import { Icon } from './icons';
+import { signOut } from '../storage/auth';
 
 function formatDate(ts: number, lang: string) {
   return new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(ts);
@@ -26,7 +27,7 @@ let lastFolder: string | null = null;
 
 const DRAG_TYPE = 'application/x-ampux-project';
 
-export function Home({ onOpen }: { onOpen: (id: string) => void }) {
+export function Home({ onOpen, username }: { onOpen: (id: string) => void; username: string | null }) {
   const t = useT();
   const [projects, setProjects] = useState<ProjectMeta[] | null>(null);
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -170,6 +171,17 @@ export function Home({ onOpen }: { onOpen: (id: string) => void }) {
           <button className="btn primary" onClick={create}>
             <Icon.plus /> {t.home.newProject}
           </button>
+          {username && (
+            <>
+              <span className="tb-sep" />
+              <span className="home-user" title={t.login.signedInAs(username)}>
+                {username}
+              </span>
+              <button className="btn" onClick={() => void signOut()}>
+                {t.login.signOut}
+              </button>
+            </>
+          )}
         </div>
       </header>
 

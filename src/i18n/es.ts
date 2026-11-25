@@ -10,6 +10,19 @@ export const es = {
     general: 'General',
     act: 'Acto',
   },
+  login: {
+    username: 'Usuario',
+    password: 'Contraseña',
+    signIn: 'Entrar',
+    signingIn: 'Entrando…',
+    signOut: 'Salir',
+    signedInAs: (u: string) => `Sesión iniciada como ${u}`,
+    errors: {
+      credentials: 'Usuario o contraseña incorrectos.',
+      network: 'No hay conexión. Probá de nuevo en un rato.',
+      unknown: 'No se pudo entrar. Probá de nuevo.',
+    },
+  },
   home: {
     projects: 'Proyectos',
     newProject: 'Nuevo guion',
