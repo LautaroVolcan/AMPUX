@@ -19,7 +19,16 @@ npm run build    # build de producción en dist/
 2. Local: copiar `.env.example` como `.env.local` y completar URL y clave pública (Project Settings → API).
 3. Publicada: cargar las mismas dos como *variables* del repo (`SUPABASE_URL`, `SUPABASE_ANON_KEY`); el workflow las usa al compilar.
 
-Sin esas variables la app guarda solo en el navegador.
+Sin esas variables la app guarda solo en el navegador y no pide login.
+
+### Cuentas (login)
+
+Con Supabase configurado, AMPUX pide **usuario y contraseña**. Todos los usuarios ven y editan todos los guiones.
+
+- Las cuentas se crean a mano en el panel de Supabase: **Authentication → Users → Add user → Create new user**, con email `usuario@ampux.lautaroferrandi.com` (el usuario es lo que va antes de la `@`), una contraseña y **Auto Confirm User** marcado.
+- El registro abierto tiene que estar apagado (**Authentication → Sign In / Providers → Allow new users to sign up**).
+- Para cambiar una contraseña olvidada: mismo panel, en el usuario.
+- Las reglas que exigen sesión están en `supabase/login.sql` (y en `schema.sql` para proyectos nuevos).
 
 ## Cómo se escribe
 
@@ -59,6 +68,6 @@ tests/          Vitest
 - **Fase 2** (múltiples proyectos, navegador con drag & drop, portada, buscar/reemplazar, notas, modo borrador, modo oscuro, zoom, estadísticas) — hecha.
 - **Fase 3** (tablero de tarjetas con sinopsis y color, diálogo dual, import/export `.fdx`, numeración de escenas bloqueada) — hecha.
 - **Fase 4** (desglose con etiquetas, reportes CSV/PDF, modo revisión con colores y asteriscos, exportar páginas cambiadas, historial de versiones) — hecha. Todo vive en el menú **Producción** de la barra superior.
-- **Pulido con uso real**: resaltador (botón del marcador en la barra superior, ⌘⇧H); negrita, cursiva y subrayado; la barra superior ya no se corre al escribir el título.
+- **Pulido con uso real**: resaltador (botón del marcador en la barra superior, ⌘⇧H); negrita, cursiva y subrayado; la barra superior ya no se corre al escribir el título; login con usuario y contraseña.
 
 Fuente: [Courier Prime](https://github.com/quoteunquoteapps/CourierPrime) (SIL Open Font License).

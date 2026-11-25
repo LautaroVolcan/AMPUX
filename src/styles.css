@@ -304,6 +304,42 @@ textarea.input {
 .home {
   min-height: 100%;
 }
+/* ---------- Login ---------- */
+.login {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 24px;
+  background: var(--bg);
+}
+.login-card {
+  width: 100%;
+  max-width: 300px;
+}
+.login-card .wordmark {
+  margin-bottom: 28px;
+  text-align: center;
+}
+.login-error {
+  min-height: 18px;
+  margin: 0 0 8px;
+  color: var(--danger);
+  font-size: 12px;
+}
+.login-submit {
+  width: 100%;
+  justify-content: center;
+  height: 34px;
+}
+.login-submit:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.home-user {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .home-head {
   display: flex;
   align-items: center;
@@ -314,6 +350,7 @@ textarea.input {
 }
 .home-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
 }
 .home-main {

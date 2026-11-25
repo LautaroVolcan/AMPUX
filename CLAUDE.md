@@ -7,9 +7,9 @@ Decisiones técnicas: `DECISIONS.md`. Uso y estructura: `README.md`.
 ## Estado (última sesión: 25/11/2026)
 
 - **Las 4 fases del spec están hechas**: editor + paginación + PDF/Fountain (1), proyectos, navegador de escenas, portada, buscar/reemplazar, notas, borrador, oscuro, zoom, estadísticas (2), tarjetas, diálogo dual, `.fdx`, numeración bloqueada (3), desglose, reportes CSV/PDF, revisiones con colores, historial de versiones (4).
-- 119 tests en verde (`npm test`). Con *Big Fish* (fountain.io) da 122 páginas y cada hoja de la vista mide exactamente 11": vista y PDF coinciden.
+- 122 tests en verde (`npm test`). Con *Big Fish* (fountain.io) da 122 páginas y cada hoja de la vista mide exactamente 11": vista y PDF coinciden.
 - **Publicada**: https://ampux.lautaroferrandi.com/ (dominio propio en Pages; DNS en Cloudflare) — repo `LautaroVolcan/AMPUX`, rama `main`.
-- Después de la Fase 4: sincronización con Supabase y carpetas (16/10), dominio propio (17/10), resaltador, negrita/cursiva/subrayado y barra superior estable (25/11).
+- Después de la Fase 4: sincronización con Supabase y carpetas (16/10), dominio propio (17/10), resaltador, negrita/cursiva/subrayado y barra superior estable (25/11), login con usuario y contraseña (26/11).
 - Forma de trabajo: cada cambio en una rama con su PR; Lautaro revisa y mergea.
 
 ## Etapa actual: pulido con uso real
@@ -20,12 +20,13 @@ Ideas pendientes que ya surgieron (sin priorizar):
 - Revisiones con granularidad por línea (hoy es por elemento).
 - Mover escenas con el teclado en el navegador lateral.
 - Probar el `.fdx` exportado en Final Draft real (solo se verificó ida y vuelta en AMPUX).
-- Sincronización con Supabase y carpetas (sesión 16/10/2026). Pendiente: edición simultánea (hoy gana el último que guarda) y, si hace falta, login.
+- Sincronización con Supabase y carpetas (sesión 16/10/2026). Pendiente: edición simultánea en tiempo real (hoy gana el último que guarda). Plan acordado: Yjs + y-prosemirror, transporte por Supabase Realtime, cursores con el nombre de usuario y un color; en etapas (prototipo, presencia, robustez).
 
 ## Reglas importantes
 
 - **No romper los datos guardados.** Los guiones están en Supabase (tablas `projects`, `folders`, `snapshots`; ver `supabase/schema.sql`) y en IndexedDB (`ampux`, versión 3: stores `projects`, `snapshots`, `folders`) del navegador de quien la usa. La sincronización vive en `src/storage/db.ts`. Cualquier cambio de modelo debe ser aditivo: campos nuevos opcionales o completados en `normalizeProject` (`src/storage/db.ts`), migraciones que solo agregan stores. Hay un test de compatibilidad en `tests/phase4.test.ts`.
 - **Cada push a `main` publica.** `.github/workflows/deploy.yml` corre tests, compila con `VITE_BASE=/` y despliega a Pages. Confirmar con Lautaro antes de commitear o pushear.
+- **Login** (Supabase Auth, `src/storage/auth.ts`): usuario → `usuario@ampux.lautaroferrandi.com`. Cuentas solo a mano desde el panel de Supabase; registro abierto apagado. Las reglas exigen rol `authenticated` (`supabase/login.sql`). Al cambiar reglas: primero publicar la app que las necesita, después aplicarlas.
 - La paginación (`src/pagination/paginate.ts`) es una función pura y alimenta la vista y el PDF. Si se toca el corte de líneas, verificar que las hojas sigan midiendo 11" (ver abajo).
 - Las tablas de Tab/Enter viven en `src/editor/flow.ts`.
 - El resaltador vive en `src/editor/highlighter.ts` (mark `highlight` en `schema.ts`, campo `highlights` en el modelo).

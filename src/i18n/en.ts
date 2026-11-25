@@ -12,6 +12,19 @@ export const en: Dict = {
     general: 'General',
     act: 'Act',
   },
+  login: {
+    username: 'Username',
+    password: 'Password',
+    signIn: 'Sign in',
+    signingIn: 'Signing in…',
+    signOut: 'Sign out',
+    signedInAs: (u: string) => `Signed in as ${u}`,
+    errors: {
+      credentials: 'Wrong username or password.',
+      network: 'No connection. Try again in a moment.',
+      unknown: 'Could not sign in. Try again.',
+    },
+  },
   home: {
     projects: 'Projects',
     newProject: 'New script',

@@ -3,6 +3,8 @@ import { I18nContext, dictionaries } from '../i18n';
 import { usePrefs } from './prefs';
 import { Home } from './Home';
 import { ProjectView } from './ProjectView';
+import { Login } from './Login';
+import { useAuth } from '../storage/auth';
 
 function projectFromHash() {
   const m = /^#\/p\/(.+)$/.exec(location.hash);
@@ -12,6 +14,7 @@ function projectFromHash() {
 export function App() {
   const [prefs, setPrefs] = usePrefs();
   const [projectId, setProjectId] = useState<string | null>(projectFromHash);
+  const auth = useAuth();
 
   useEffect(() => {
     const onHash = () => setProjectId(projectFromHash());
@@ -33,10 +36,14 @@ export function App() {
 
   return (
     <I18nContext.Provider value={dictionaries[prefs.uiLang]}>
-      {projectId ? (
+      {auth.status === 'loading' ? (
+        <div className="loading" />
+      ) : auth.status === 'signedOut' ? (
+        <Login />
+      ) : projectId ? (
         <ProjectView key={projectId} projectId={projectId} prefs={prefs} setPrefs={setPrefs} onClose={() => open(null)} />
       ) : (
-        <Home onOpen={open} />
+        <Home onOpen={open} username={auth.status === 'signedIn' ? auth.username : null} />
       )}
     </I18nContext.Provider>
   );
