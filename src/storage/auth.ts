@@ -4,11 +4,11 @@ import { flushPushes } from './db';
 
 /**
  * Login con usuario y contraseña sobre Supabase Auth.
- * Supabase pide un email: el usuario "lautaro" se guarda como "lautaro@ampux.lautaroferrandi.com" (un dominio propio,
+ * Supabase pide un email: el usuario "lautaro" se guarda como "lautaro@lautaroferrandi.com" (el dominio propio,
  * así nunca se le escribe a nadie). Si alguien escribe un email completo, se usa tal cual.
  * Las cuentas las crea Lautaro desde el panel de Supabase; el registro abierto está apagado.
  */
-export const USER_DOMAIN = 'ampux.lautaroferrandi.com';
+export const USER_DOMAIN = 'lautaroferrandi.com';
 
 export function usernameToEmail(username: string): string {
   const u = username.trim().toLowerCase();

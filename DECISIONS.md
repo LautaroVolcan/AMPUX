@@ -95,7 +95,7 @@ Decisiones que el spec no fijaba, tomadas eligiendo la opción más simple.
 
 ## Login
 - **Supabase Auth** con usuario y contraseña. Las contraseñas las guarda Supabase (cifradas, en `auth.users`); AMPUX nunca las ve ni las guarda.
-- Supabase pide email: el usuario `lautaro` es `lautaro@ampux.lautaroferrandi.com` (dominio propio, así nunca se le escribe a nadie). Si alguien escribe un email completo, se usa tal cual. No hay "olvidé mi contraseña": se cambia desde el panel.
+- Supabase pide email: el usuario `lautaro` es `lautaro@lautaroferrandi.com` (dominio propio; como las cuentas se confirman a mano y no hay recuperación por mail, nunca se le escribe a esa dirección). Si alguien escribe un email completo, se usa tal cual. No hay "olvidé mi contraseña": se cambia desde el panel.
 - **Cuentas solo a mano** desde el panel; el registro abierto está apagado. Todos los usuarios ven y editan todo (como antes del login).
 - Reglas: `leer`, `crear` y `editar` pasan de `anon, authenticated` a solo `authenticated` (`supabase/login.sql`). Sigue sin haber `DELETE`. Sin sesión, la clave pública ya no alcanza para ver nada.
 - Sin Supabase configurado (desarrollo local) no hay login y la app es solo local, como antes.

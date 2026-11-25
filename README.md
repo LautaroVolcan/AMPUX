@@ -25,7 +25,7 @@ Sin esas variables la app guarda solo en el navegador y no pide login.
 
 Con Supabase configurado, AMPUX pide **usuario y contraseña**. Todos los usuarios ven y editan todos los guiones.
 
-- Las cuentas se crean a mano en el panel de Supabase: **Authentication → Users → Add user → Create new user**, con email `usuario@ampux.lautaroferrandi.com` (el usuario es lo que va antes de la `@`), una contraseña y **Auto Confirm User** marcado.
+- Las cuentas se crean a mano en el panel de Supabase: **Authentication → Users → Add user → Create new user**, con email `usuario@lautaroferrandi.com` (el usuario es lo que va antes de la `@`), una contraseña y **Auto Confirm User** marcado.
 - El registro abierto tiene que estar apagado (**Authentication → Sign In / Providers → Allow new users to sign up**).
 - Para cambiar una contraseña olvidada: mismo panel, en el usuario.
 - Las reglas que exigen sesión están en `supabase/login.sql` (y en `schema.sql` para proyectos nuevos).
