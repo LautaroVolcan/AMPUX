@@ -1,4 +1,6 @@
 import type { ScriptElement, TitlePage } from '../../types';
+import { clipStyles } from '../styleRuns';
+import { serializeEmphasis } from './emphasis';
 
 const SCENE_RE = /^(INT|EXT|EST|INT\.?\/EXT|EXT\.?\/INT|I\/E)[. ]/i;
 const FORCE_CHARS = /^[!@.>~#=]/;
@@ -47,9 +49,11 @@ export function serializeFountain(elements: ScriptElement[], titlePage?: Partial
     if (chunks.length && !inDialogue) chunks.push('');
 
     const text = el.text;
+    // Texto con énfasis (*, **, _). Las mayúsculas no cambian los offsets de los estilos.
+    const fmt = (t: string, styles = el.styles) => serializeEmphasis(t, styles);
     switch (el.type) {
       case 'scene': {
-        const upper = text.toLocaleUpperCase();
+        const upper = fmt(text.toLocaleUpperCase());
         const head = SCENE_RE.test(upper) ? upper : `.${upper}`;
         const num = opts.sceneNumbers ? opts.sceneNumbers.get(i) : el.sceneNumber;
         chunks.push(num ? `${head} #${num}#` : head);
@@ -57,36 +61,40 @@ export function serializeFountain(elements: ScriptElement[], titlePage?: Partial
         break;
       }
       case 'character': {
-        const upper = text.toLocaleUpperCase();
+        const upper = fmt(text.toLocaleUpperCase());
         const name = upper.replace(/\(.*?\)/g, '').trim();
         const forced = !isUpper(name) || SCENE_RE.test(upper);
         chunks.push(`${forced ? '@' : ''}${upper}${el.dual ? ' ^' : ''}`);
         break;
       }
       case 'parenthetical': {
-        const t = text.trim();
+        // Los paréntesis quedan fuera del énfasis: "(*así*)", no "*(así)*", que se leería como diálogo.
+        const open = text.indexOf('(');
+        const close = text.lastIndexOf(')');
+        const inner = open >= 0 && close > open ? clipStyles(el.styles, open + 1, close) : el.styles;
+        const t = fmt(text, inner).trim();
         chunks.push(t.startsWith('(') ? t : `(${t})`);
         break;
       }
       case 'dialogue':
         // Las líneas en blanco dentro de un diálogo se escriben con dos espacios.
-        chunks.push(text.split('\n').map((l) => (l === '' ? '  ' : l)).join('\n'));
+        chunks.push(fmt(text).split('\n').map((l) => (l === '' ? '  ' : l)).join('\n'));
         break;
       case 'transition': {
-        const upper = text.toLocaleUpperCase();
+        const upper = fmt(text.toLocaleUpperCase());
         chunks.push(/TO:$/.test(upper) ? upper : `> ${upper}`);
         break;
       }
       case 'act':
-        chunks.push(`# ${text}`);
+        chunks.push(`# ${fmt(text)}`);
         break;
       case 'shot':
-        chunks.push(forceAction(text.toLocaleUpperCase()));
+        chunks.push(forceAction(fmt(text.toLocaleUpperCase())));
         break;
       case 'action':
       case 'general':
       default:
-        chunks.push(forceAction(text));
+        chunks.push(forceAction(fmt(text)));
     }
   }
   return chunks.join('\n') + '\n';

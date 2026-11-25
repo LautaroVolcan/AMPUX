@@ -31,6 +31,7 @@ Sin esas variables la app guarda solo en el navegador.
 | Shift+Enter | Salto de línea dentro del mismo elemento |
 | ⌘D | Diálogo dual (pone el personaje al lado del anterior) |
 | ⌘S / ⌘F / ⌘Z | Guardar, buscar y reemplazar, deshacer |
+| ⌘B / ⌘I / ⌘U | Negrita, cursiva y subrayado (también con los botones B I U de la barra). Salen en el PDF, Fountain y FDX. |
 | ⌘⇧H | Resaltador: con la herramienta prendida, lo que se selecciona queda resaltado en naranja (pasar de nuevo lo despinta). Esc la apaga. |
 
 Detección automática: `INT.` / `EXT.` al inicio de una acción la convierte en encabezado; una línea en mayúsculas que termina en `:` pasa a transición; `(` debajo de un personaje crea una acotación.
@@ -58,6 +59,6 @@ tests/          Vitest
 - **Fase 2** (múltiples proyectos, navegador con drag & drop, portada, buscar/reemplazar, notas, modo borrador, modo oscuro, zoom, estadísticas) — hecha.
 - **Fase 3** (tablero de tarjetas con sinopsis y color, diálogo dual, import/export `.fdx`, numeración de escenas bloqueada) — hecha.
 - **Fase 4** (desglose con etiquetas, reportes CSV/PDF, modo revisión con colores y asteriscos, exportar páginas cambiadas, historial de versiones) — hecha. Todo vive en el menú **Producción** de la barra superior.
-- **Pulido con uso real**: resaltador (botón del marcador en la barra superior, ⌘⇧H).
+- **Pulido con uso real**: resaltador (botón del marcador en la barra superior, ⌘⇧H); negrita, cursiva y subrayado; la barra superior ya no se corre al escribir el título.
 
 Fuente: [Courier Prime](https://github.com/quoteunquoteapps/CourierPrime) (SIL Open Font License).

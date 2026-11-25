@@ -45,7 +45,7 @@ Decisiones que el spec no fijaba, tomadas eligiendo la opción más simple.
 - **Numeración bloqueada** (Ajustes): al activarla, cada escena guarda su número actual. Una escena nueva recibe su número apenas se crea (5A, 5B…; antes de la 1 es A1; al final continúa 13, 14…) y lo conserva aunque se mueva. Las escenas borradas dejan el hueco. Al desactivarla se vuelve a la numeración correlativa. Al copiar y pegar una escena, la copia no hereda el número.
 - Si un `.fountain` o `.fdx` importado trae números de escena, el proyecto se abre con la numeración bloqueada.
 - **Fountain**: `= texto` se guarda como sinopsis de la escena anterior y se exporta igual.
-- **FDX**: el acto se exporta como `New Act` (y se importan `New Act`, `Act Break` y `End of Act`). Los tipos desconocidos pasan a Acción. Los estilos de texto (negrita, etc.) se descartan. Para la portada se toman los textos centrados en orden (título, crédito, autor, fuente), el alineado a la izquierda como contacto y el alineado a la derecha como fecha.
+- **FDX**: el acto se exporta como `New Act` (y se importan `New Act`, `Act Break` y `End of Act`). Los tipos desconocidos pasan a Acción. Los estilos de texto se importan y exportan desde el 25/11/2026 (ver “Negrita, cursiva y subrayado”). Para la portada se toman los textos centrados en orden (título, crédito, autor, fuente), el alineado a la izquierda como contacto y el alineado a la derecha como fecha.
 - Los tests de `.fdx` corren con jsdom, porque happy-dom no parsea XML.
 
 ## Fase 4
@@ -78,3 +78,17 @@ Decisiones que el spec no fijaba, tomadas eligiendo la opción más simple.
 - Se deshace con ⌘Z. No cuenta como revisión.
 - Es una marca de trabajo: **no se exporta** a PDF, Fountain ni FDX. El backup JSON y el historial de versiones sí lo conservan.
 - Si alguien guarda el guion desde una versión vieja de la app (anterior al resaltador), los resaltados se pierden: esa versión no conoce el campo.
+
+## Negrita, cursiva y subrayado
+- Tres *marks* de ProseMirror (`bold`, `italic`, `underline`; se dibujan como `<strong>`, `<em>`, `<u>`). En el modelo: `styles: [{style, from, to}]` por elemento, opcional como `tags` y `highlights`. No hay cambios en Supabase.
+- ⌘B / ⌘I / ⌘U y los botones B I U de la barra. Funcionan como en un procesador de texto: si toda la selección ya tiene el estilo, lo quita; si no, lo aplica. Sin selección valen para lo que se escriba. Los botones muestran el estado del cursor o de toda la selección.
+- Al pegar desde otras apps se respetan `<b>/<strong>`, `<i>/<em>`, `<u>` y los estilos en línea equivalentes (se ignora el `<b style="font-weight:normal">` de Google Docs).
+- No cuentan como revisión (no cambian el texto).
+- **Paginación**: no cambia. Las cuatro variantes de Courier Prime tienen el mismo ancho (hay un test) y la vista con todo en negrita/cursiva sigue midiendo 11" por hoja.
+- **PDF**: cada línea se dibuja por tramos con su variante (Regular, Bold, Italic, BoldItalic) y el subrayado como línea. Solo se descargan e incrustan las variantes que el guion usa. Los bloques de la paginación traen `lineStarts` para ubicar los estilos en cada línea.
+- **Fountain**: `*cursiva*`, `**negrita**`, `***ambas***`, `_subrayado_` (combinables: `_**así**_`). Al exportar, `*` y `_` literales se escapan (`\*`, `\_`) y los espacios del borde de un tramo quedan fuera de las marcas, porque Fountain no admite marcas pegadas a un espacio. Por eso, un espacio justo en un cambio de estilo pierde el estilo en la ida y vuelta (p. ej. `***puede*** *ser*`). En las acotaciones los paréntesis quedan fuera del énfasis (`(*así*)`), porque `*(así)*` se leería como diálogo. Un encabezado o transición con énfasis se exporta forzado (`.`, `>`), para que se vuelva a leer igual.
+- **FDX**: un `<Text>` por tramo con `Style="Bold+Italic+Underline"`, como Final Draft. Al importar se leen esos tres e ignoran los demás (`AllCaps`, etc.).
+
+## Barra superior
+- El título no mueve el centro: izquierda y derecha son `flex: 1 1 0` (reparten el sobrante en partes iguales); la derecha no baja de su contenido y la izquierda se achica, cortando el título con "…". El estado de guardado tiene ancho fijo para que "Guardando…" no haga saltar nada.
+- En pantallas medianas se compacta lo accesorio, en este orden: ≤1360 px se ocultan la palabra AMPUX, el texto de "Exportar" y el de "Guardado" (queda el punto, con el texto como *tooltip*); ≤1180 px el zoom y las páginas.

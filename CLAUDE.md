@@ -7,16 +7,15 @@ Decisiones técnicas: `DECISIONS.md`. Uso y estructura: `README.md`.
 ## Estado (última sesión: 25/11/2026)
 
 - **Las 4 fases del spec están hechas**: editor + paginación + PDF/Fountain (1), proyectos, navegador de escenas, portada, buscar/reemplazar, notas, borrador, oscuro, zoom, estadísticas (2), tarjetas, diálogo dual, `.fdx`, numeración bloqueada (3), desglose, reportes CSV/PDF, revisiones con colores, historial de versiones (4).
-- 105 tests en verde (`npm test`). Con *Big Fish* (fountain.io) da 122 páginas y cada hoja de la vista mide exactamente 11": vista y PDF coinciden.
+- 119 tests en verde (`npm test`). Con *Big Fish* (fountain.io) da 122 páginas y cada hoja de la vista mide exactamente 11": vista y PDF coinciden.
 - **Publicada**: https://ampux.lautaroferrandi.com/ (dominio propio en Pages; DNS en Cloudflare) — repo `LautaroVolcan/AMPUX`, rama `main`.
-- Después de la Fase 4: sincronización con Supabase y carpetas (16/10), dominio propio (17/10), resaltador (25/11).
+- Después de la Fase 4: sincronización con Supabase y carpetas (16/10), dominio propio (17/10), resaltador, negrita/cursiva/subrayado y barra superior estable (25/11).
 - Forma de trabajo: cada cambio en una rama con su PR; Lautaro revisa y mergea.
 
 ## Etapa actual: pulido con uso real
 
 Una amiga de Lautaro usa la versión publicada. La idea es juntar su feedback y pulir.
 Ideas pendientes que ya surgieron (sin priorizar):
-- Negrita / cursiva / subrayado (hoy no hay; se pierden al importar Fountain/FDX).
 - Exportar etiquetas de desglose a FDX (`TagData`).
 - Revisiones con granularidad por línea (hoy es por elemento).
 - Mover escenas con el teclado en el navegador lateral.
@@ -30,6 +29,8 @@ Ideas pendientes que ya surgieron (sin priorizar):
 - La paginación (`src/pagination/paginate.ts`) es una función pura y alimenta la vista y el PDF. Si se toca el corte de líneas, verificar que las hojas sigan midiendo 11" (ver abajo).
 - Las tablas de Tab/Enter viven en `src/editor/flow.ts`.
 - El resaltador vive en `src/editor/highlighter.ts` (mark `highlight` en `schema.ts`, campo `highlights` en el modelo).
+- Negrita/cursiva/subrayado: marks `bold`/`italic`/`underline` en `schema.ts`, comandos en `src/editor/textStyles.ts`, campo `styles` en el modelo. Fountain en `src/formats/fountain/emphasis.ts`; tramos compartidos (FDX, PDF) en `src/formats/styleRuns.ts`.
+- Vista previa para Lautaro: compilar con `VITE_BASE=./`, subir `dist/` a la rama huérfana `preview` y pasarle el link de raw.githack fijado al commit (`https://raw.githack.com/LautaroVolcan/AMPUX/<sha>/index.html`). Sin variables de Supabase: la vista previa guarda solo en el navegador.
 
 ## Trabajo con Lautaro
 

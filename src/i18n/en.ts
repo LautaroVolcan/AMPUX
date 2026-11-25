@@ -48,6 +48,7 @@ export const en: Dict = {
     stats: 'Statistics',
     find: 'Find',
     highlighter: 'Highlighter',
+    styles: { bold: 'Bold', italic: 'Italic', underline: 'Underline' },
     draft: 'Draft',
     paged: 'Pages',
     scenes: 'Scenes',

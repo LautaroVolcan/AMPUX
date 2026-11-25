@@ -1,6 +1,7 @@
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import type { Project, TitlePage } from '../../types';
+import { clipStyles, styleRuns } from '../styleRuns';
 import { paginate } from '../../pagination/paginate';
 import { METRICS, pageGeometry } from '../../pagination/metrics';
 import { dualMetrics } from '../../pagination/dual';
@@ -10,19 +11,40 @@ const LINE = PT / 6; // 12 pt
 const SIZE = 12;
 const BASELINE = 9.2; // desde el tope de la línea hasta la línea base
 
-let fontCache: Promise<ArrayBuffer> | null = null;
-export function loadFont(): Promise<ArrayBuffer> {
-  fontCache ??= fetch(`${import.meta.env.BASE_URL}fonts/CourierPrime-Regular.ttf`).then((r) => {
-    if (!r.ok) throw new Error('No se pudo cargar Courier Prime');
-    return r.arrayBuffer();
-  });
-  return fontCache;
+/** Variantes de Courier Prime. */
+export type FontVariant = 'regular' | 'bold' | 'italic' | 'boldItalic';
+const FONT_FILES: Record<FontVariant, string> = {
+  regular: 'CourierPrime-Regular.ttf',
+  bold: 'CourierPrime-Bold.ttf',
+  italic: 'CourierPrime-Italic.ttf',
+  boldItalic: 'CourierPrime-BoldItalic.ttf',
+};
+
+const fontCache = new Map<FontVariant, Promise<ArrayBuffer>>();
+export function loadFont(variant: FontVariant = 'regular'): Promise<ArrayBuffer> {
+  let p = fontCache.get(variant);
+  if (!p) {
+    p = fetch(`${import.meta.env.BASE_URL}fonts/${FONT_FILES[variant]}`).then((r) => {
+      if (!r.ok) throw new Error('No se pudo cargar Courier Prime');
+      return r.arrayBuffer();
+    });
+    fontCache.set(variant, p);
+  }
+  return p;
+}
+
+function variantOf(styles: readonly string[]): FontVariant {
+  const bold = styles.includes('bold');
+  const italic = styles.includes('italic');
+  return bold && italic ? 'boldItalic' : bold ? 'bold' : italic ? 'italic' : 'regular';
 }
 
 export interface PdfOptions {
   titlePage: boolean;
   /** Bytes de la fuente (para tests); si no, se descarga de /fonts. */
   fontBytes?: ArrayBuffer | Uint8Array;
+  /** Bytes de negrita / cursiva (para tests); si no, se descargan solo las que el guion usa. */
+  styleFontBytes?: Partial<Record<Exclude<FontVariant, 'regular'>, ArrayBuffer | Uint8Array>>;
   /** Solo las páginas con cambios de la revisión actual. */
   onlyRevised?: boolean;
   /** Encabezado de las páginas revisadas, p. ej. "Azul (13/10/2026)". */
@@ -53,10 +75,24 @@ export async function renderPDF(project: Project, opts: PdfOptions): Promise<Uin
   if (project.titlePage.author) pdf.setAuthor(project.titlePage.author);
   pdf.setCreator('AMPUX');
   const font = await pdf.embedFont(opts.fontBytes ?? (await loadFont()), { subset: true });
+  // Negrita / cursiva: solo se incrustan las variantes que el guion usa.
+  const fonts: Partial<Record<FontVariant, PDFFont>> = { regular: font };
+  const used = new Set<FontVariant>();
+  for (const el of project.elements) {
+    for (const r of styleRuns(el.text, el.styles)) used.add(variantOf(r.styles));
+  }
+  for (const v of used) {
+    if (v === 'regular') continue;
+    fonts[v] = await pdf.embedFont(opts.styleFontBytes?.[v] ?? (await loadFont(v)), { subset: true });
+  }
   const ink = rgb(0, 0, 0);
 
-  const text = (page: PDFPage, s: string, x: number, lineTop: number) => {
-    page.drawText(s, { x, y: H - lineTop - BASELINE, size: SIZE, font, color: ink });
+  const text = (page: PDFPage, s: string, x: number, lineTop: number, f: PDFFont = font) => {
+    page.drawText(s, { x, y: H - lineTop - BASELINE, size: SIZE, font: f, color: ink });
+  };
+  const underline = (page: PDFPage, x: number, w: number, lineTop: number) => {
+    const y = H - lineTop - BASELINE - 1.5;
+    page.drawLine({ start: { x, y }, end: { x: x + w, y }, thickness: 0.6, color: ink });
   };
   const width = (s: string) => font.widthOfTextAtSize(s, SIZE);
 
@@ -81,11 +117,18 @@ export async function renderPDF(project: Project, opts: PdfOptions): Promise<Uin
         let x = m.left * PT;
         if (!block.synthetic && m.align === 'right') x = geo.rightEdge * PT - width(s);
         if (!block.synthetic && m.align === 'center') x = (m.left + m.width / 2) * PT - width(s) / 2;
-        text(page, s, x, top);
-        if (block.type === 'act' && !block.synthetic) {
-          const y = H - top - BASELINE - 1.5;
-          page.drawLine({ start: { x, y }, end: { x: x + width(s), y }, thickness: 0.6, color: ink });
-        }
+        const el = block.elementIndex >= 0 ? project.elements[block.elementIndex] : undefined;
+        const start = block.lineStarts?.[i];
+        if (el?.styles?.length && start !== undefined) {
+          // Tramos de la línea con su variante (Courier Prime es monoespaciada: el avance es el mismo).
+          const local = clipStyles(el.styles, start, start + s.length).map((r) => ({ ...r, from: r.from - start, to: r.to - start }));
+          for (const run of styleRuns(s, local)) {
+            const rx = x + width(s.slice(0, run.from));
+            text(page, run.text, rx, top, fonts[variantOf(run.styles)] ?? font);
+            if (run.styles.includes('underline')) underline(page, rx, width(run.text), top);
+          }
+        } else text(page, s, x, top);
+        if (block.type === 'act' && !block.synthetic) underline(page, x, width(s), top);
         if (block.elementIndex >= 0 && isRevised(project, block.elementIndex)) text(page, '*', 7.9 * PT, top);
         if (i === 0 && block.sceneNumber && block.startOffset === 0 && settings.sceneNumbers !== 'none') {
           text(page, block.sceneNumber, 1.2 * PT - width(block.sceneNumber), top);

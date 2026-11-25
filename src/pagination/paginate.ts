@@ -24,6 +24,8 @@ export interface Block {
   /** Columna, si el bloque es parte de un diálogo dual. */
   dual?: 'left' | 'right';
   lines: string[];
+  /** Offset (en el texto impreso del elemento) donde empieza cada línea. No está en los bloques sintéticos. */
+  lineStarts?: number[];
   /** Rango de offsets del texto del elemento que cubre este bloque. */
   startOffset: number;
   endOffset: number;
@@ -121,6 +123,7 @@ export function paginate(elements: ScriptElement[], settings: PaginateSettings):
       line,
       dual: opts.dual,
       lines: lines.map((l) => l.text),
+      lineStarts: lines.map((l) => l.start),
       startOffset: clampOffset(p, lines[0]?.start ?? 0),
       endOffset: clampOffset(p, to >= p.lines.length ? p.el.text.length : p.lines[to].start),
       sceneNumber: p.el.type === 'scene' ? sceneNumbers.get(p.index) : undefined,

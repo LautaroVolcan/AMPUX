@@ -1,5 +1,5 @@
 import { Schema, type MarkSpec, type NodeSpec, type Node as PMNode, type Mark } from 'prosemirror-model';
-import { ELEMENT_TYPES, newId, type ElementType, type ScriptElement, type TagCategory, type TagRef, type TextRange } from '../types';
+import { ELEMENT_TYPES, TEXT_STYLES, newId, type ElementType, type ScriptElement, type StyleRange, type TagCategory, type TagRef, type TextRange } from '../types';
 
 function elementNode(type: ElementType): NodeSpec {
   return {
@@ -47,6 +47,24 @@ const marks: Record<string, MarkSpec> = {
     parseDOM: [{ tag: 'span[data-tag]', getAttrs: (dom) => ({ category: (dom as HTMLElement).getAttribute('data-tag') }) }],
     toDOM: (mark) => ['span', { class: `tag tag-${mark.attrs.category}`, 'data-tag': mark.attrs.category }, 0],
   },
+  // Estilos de texto. Los nombres coinciden con TextStyle. Al pegar desde otras apps se reconocen <b>/<strong>, <i>/<em> y <u>.
+  bold: {
+    parseDOM: [
+      { tag: 'strong' },
+      // Google Docs envuelve todo en <b style="font-weight:normal">.
+      { tag: 'b', getAttrs: (dom) => (dom as HTMLElement).style.fontWeight !== 'normal' && null },
+      { style: 'font-weight', getAttrs: (v) => /^(bold(er)?|[6-9]\d\d)$/.test(v as string) && null },
+    ],
+    toDOM: () => ['strong', 0],
+  },
+  italic: {
+    parseDOM: [{ tag: 'em' }, { tag: 'i' }, { style: 'font-style=italic' }],
+    toDOM: () => ['em', 0],
+  },
+  underline: {
+    parseDOM: [{ tag: 'u' }, { style: 'text-decoration', getAttrs: (v) => (v as string).includes('underline') && null }],
+    toDOM: () => ['u', 0],
+  },
   // Resaltador. No es inclusivo: escribir justo después de un tramo resaltado no lo extiende.
   highlight: {
     inclusive: false,
@@ -66,29 +84,30 @@ export function isElementEmpty(node: PMNode): boolean {
   return text === '' || (node.type.name === 'parenthetical' && text === '()');
 }
 
-function inlineContent(text: string, tags: TagRef[] = [], highlights: TextRange[] = []) {
-  // Cortes en cada borde de etiqueta o resaltado y en cada salto de línea.
+function inlineContent(text: string, tags: TagRef[] = [], highlights: TextRange[] = [], styles: StyleRange[] = []) {
+  // Cortes en cada borde de etiqueta, estilo o resaltado y en cada salto de línea.
   const cuts = new Set<number>([0, text.length]);
-  for (const t of [...tags, ...highlights]) {
+  for (const t of [...tags, ...highlights, ...styles]) {
     cuts.add(Math.max(0, Math.min(text.length, t.from)));
     cuts.add(Math.max(0, Math.min(text.length, t.to)));
   }
   for (let i = 0; i < text.length; i++) if (text[i] === '\n') cuts.add(i).add(i + 1);
   const points = [...cuts].sort((a, b) => a - b);
+  const covers = (r: TextRange, a: number, b: number) => r.from <= a && r.to >= b;
   const out: PMNode[] = [];
   for (let k = 0; k < points.length - 1; k++) {
     const [a, b] = [points[k], points[k + 1]];
     const seg = text.slice(a, b);
     if (!seg) continue;
-    const lit = highlights.some((h) => h.from <= a && h.to >= b);
+    // Estilos y resaltado (no las etiquetas) también van sobre el salto de línea, para que el tramo no se parta.
+    const marks = TEXT_STYLES.filter((st) => styles.some((r) => r.style === st && covers(r, a, b))).map((st) => schema.marks[st].create());
+    if (highlights.some((h) => covers(h, a, b))) marks.push(schema.marks.highlight.create());
     if (seg === '\n') {
-      // El salto lleva el resaltado si cae dentro de un tramo, para que el tramo no se parta.
-      out.push(schema.nodes.hard_break.create(null, null, lit ? [schema.marks.highlight.create()] : []));
+      out.push(schema.nodes.hard_break.create(null, null, marks));
       continue;
     }
-    const marks = tags.filter((t) => t.from <= a && t.to >= b).map((t) => schema.marks.tag.create({ category: t.category }));
-    if (lit) marks.push(schema.marks.highlight.create());
-    out.push(schema.text(seg, marks));
+    const tagMarks = tags.filter((t) => covers(t, a, b)).map((t) => schema.marks.tag.create({ category: t.category }));
+    out.push(schema.text(seg, [...tagMarks, ...marks]));
   }
   return out;
 }
@@ -117,20 +136,30 @@ export function nodeTags(node: PMNode): TagRef[] {
   return tags;
 }
 
-/** Tramos resaltados de un nodo, como rangos de texto (los adyacentes se unen). */
-export function nodeHighlights(node: PMNode): TextRange[] {
+/** Tramos con la marca `name` en un nodo, como rangos de texto (los adyacentes se unen). */
+function nodeMarkRanges(node: PMNode, name: string): TextRange[] {
   const out: TextRange[] = [];
   let offset = 0;
   let open: TextRange | null = null;
   node.forEach((child) => {
     const size = child.isText ? child.text!.length : 1;
-    if (child.marks.some((m: Mark) => m.type.name === 'highlight')) {
+    if (child.marks.some((m: Mark) => m.type.name === name)) {
       if (open) open.to = offset + size;
       else out.push((open = { from: offset, to: offset + size }));
     } else open = null;
     offset += size;
   });
   return out;
+}
+
+/** Tramos resaltados de un nodo. */
+export function nodeHighlights(node: PMNode): TextRange[] {
+  return nodeMarkRanges(node, 'highlight');
+}
+
+/** Negrita, cursiva y subrayado de un nodo. */
+export function nodeStyles(node: PMNode): StyleRange[] {
+  return TEXT_STYLES.flatMap((style) => nodeMarkRanges(node, style).map((r) => ({ style, ...r })));
 }
 
 export function elementToNode(el: ScriptElement): PMNode {
@@ -143,7 +172,7 @@ export function elementToNode(el: ScriptElement): PMNode {
     color: el.color ?? null,
     revision: el.revision ?? null,
   };
-  return type.create(attrs, inlineContent(el.text, el.tags, el.highlights));
+  return type.create(attrs, inlineContent(el.text, el.tags, el.highlights, el.styles));
 }
 
 export function elementsToDoc(elements: ScriptElement[]): PMNode {
@@ -162,6 +191,8 @@ export function docToElements(doc: PMNode): ScriptElement[] {
     if (node.attrs.revision) el.revision = node.attrs.revision;
     const tags = nodeTags(node);
     if (tags.length) el.tags = tags;
+    const styles = nodeStyles(node);
+    if (styles.length) el.styles = styles;
     const highlights = nodeHighlights(node);
     if (highlights.length) el.highlights = highlights;
     out.push(el);
