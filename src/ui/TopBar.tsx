@@ -28,6 +28,8 @@ interface Props {
   onOpen: (dialog: Dialog) => void;
   breakdown: boolean;
   onToggleBreakdown: () => void;
+  highlighter: boolean;
+  onToggleHighlighter: () => void;
   /** Texto del indicador de revisión, si el modo revisión está activo. */
   revisionChip: string | null;
   revisionColor: string;
@@ -99,6 +101,16 @@ export function TopBar(p: Props) {
         </select>
         <button className={`chip${p.dual ? ' on' : ''}`} onClick={p.onDual} title={t.top.dualHint}>
           {t.top.dual}
+        </button>
+        <button
+          className={`icon-btn hl-btn${p.highlighter ? ' on' : ''}`}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={p.onToggleHighlighter}
+          title={`${t.top.highlighter} (⌘⇧H)`}
+          aria-label={t.top.highlighter}
+          aria-pressed={p.highlighter}
+        >
+          <Icon.highlighter />
         </button>
         <span className="tb-meta">{t.top.pages(p.pages)}</span>
         {p.breakdown && (

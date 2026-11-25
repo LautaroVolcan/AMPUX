@@ -51,6 +51,12 @@ export interface TagRef {
   to: number;
 }
 
+/** Rango [from, to) dentro del texto del elemento. */
+export interface TextRange {
+  from: number;
+  to: number;
+}
+
 /** Colores estándar de revisión, en orden. */
 export type RevisionColor =
   | 'white' | 'blue' | 'pink' | 'yellow' | 'green' | 'goldenrod' | 'buff' | 'salmon' | 'cherry' | 'tan';
@@ -69,6 +75,8 @@ export interface ScriptElement {
   synopsis?: string;
   color?: CardColor;
   tags?: TagRef[];
+  /** Tramos marcados con el resaltador. */
+  highlights?: TextRange[];
   /** Revisión en la que se modificó por última vez. */
   revision?: RevisionColor;
 }

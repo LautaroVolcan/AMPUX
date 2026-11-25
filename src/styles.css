@@ -34,6 +34,7 @@
   --accent-ink: #ffffff;
   --hit: #fde68a;
   --hit-current: #f59e0b;
+  --hl: #ffae57;
   --danger: #b42318;
   --gap: #ecebe8;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px rgb(0 0 0 / 0.06);
@@ -75,6 +76,7 @@
     --accent-ink: #141414;
     --hit: #5b4a12;
     --hit-current: #a16207;
+    --hl: rgb(255 150 40 / 0.55);
     --danger: #f97066;
     --gap: #0e0e0e;
     --red: #b35d5d;
@@ -102,6 +104,7 @@
   --accent-ink: #141414;
   --hit: #5b4a12;
   --hit-current: #a16207;
+  --hl: rgb(255 150 40 / 0.55);
   --danger: #f97066;
   --gap: #0e0e0e;
   --red: #b35d5d;
@@ -971,6 +974,19 @@ textarea.input {
 .swatch.on {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+
+/* ---------- Resaltador ---------- */
+.script mark.hl {
+  background: var(--hl);
+  color: inherit;
+  border-radius: 1px;
+}
+.sheet.highlighting .script {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M14 4l6 6-8 8H6v-6z' fill='%23ffae57' stroke='%23141414' stroke-width='1.5' stroke-linejoin='round'/%3E%3Cpath d='M10.5 7.5l6 6' stroke='%23141414' stroke-width='1.5'/%3E%3C/svg%3E") 6 18, text;
+}
+.hl-btn.on svg path:first-child {
+  fill: var(--hl);
 }
 
 /* ---------- Desglose ---------- */

@@ -59,7 +59,7 @@ Decisiones que el spec no fijaba, tomadas eligiendo la opción más simple.
 - 10 colores en el orden estándar: Blanco, Azul, Rosa, Amarillo, Verde, Dorado, Beige, Salmón, Cereza, Canela.
 - "Exportar páginas cambiadas" genera un PDF solo con las páginas que tienen cambios de la revisión actual, conservando su numeración, con "Rev. Color (fecha)" en el encabezado y sin portada.
 - **Versiones**: se guardan en un almacén nuevo de IndexedDB (`snapshots`). La base pasó a la versión 2: la migración solo agrega ese almacén y no toca los proyectos guardados (hay un test de compatibilidad, y se probó en el navegador abriendo una base v1 con datos). Restaurar guarda primero el estado actual como versión ("Antes de restaurar…"), así nunca se pierde nada. Borrar un proyecto borra también sus versiones.
-- **Deploy**: GitHub Pages publica el `dist/` que genera un workflow de GitHub Actions (`.github/workflows/deploy.yml`), con `VITE_BASE=/AMPUX/`.
+- **Deploy**: GitHub Pages publica el `dist/` que genera un workflow de GitHub Actions (`.github/workflows/deploy.yml`), con `VITE_BASE=/AMPUX/` (desde el 17/10/2026, `VITE_BASE=/`: la app se sirve en `ampux.lautaroferrandi.com`).
 
 ## Nube y carpetas
 - **Supabase** sin login: la URL y la clave pública (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) se compilan en la app. Todos ven y editan todo. Sin esas variables la app funciona como antes, solo en el navegador. Esquema en `supabase/schema.sql`.
@@ -68,3 +68,13 @@ Decisiones que el spec no fijaba, tomadas eligiendo la opción más simple.
 - **Gana la copia más nueva** según `updatedAt`, al listar y al abrir. Si dos personas editan el mismo guion a la vez, gana el último que guarda (no hay fusión).
 - **Migración**: al abrir la pantalla de Proyectos, los guiones que solo están en el navegador se suben, salvo los que no tienen texto (se descartan). Las versiones locales se suben una vez por sesión.
 - **Carpetas**: un solo nivel, `folderId` opcional en el proyecto (columna `folder_id` en la nube). La base local pasó a la versión 3, que solo agrega el almacén `folders`. Borrar una carpeta pasa sus guiones a la raíz. Se mueve con el menú (Mover a…) o arrastrando la tarjeta a la carpeta o a "Proyectos".
+
+## Resaltador
+- Es un *mark* de ProseMirror (`highlight`, se dibuja como `<mark class="hl">`), así sigue al texto al editar alrededor. No es inclusivo: escribir justo después de un tramo resaltado no lo estira.
+- En el modelo se guarda como `highlights: [{from, to}]` sobre el texto del elemento, igual que las etiquetas. Es un campo opcional: los guiones viejos no lo tienen y abren igual; no hay cambios en Supabase (va dentro de `data`).
+- Un solo color, naranja de resaltador (`--hl`; en oscuro es translúcido para que el texto se siga leyendo).
+- **Herramienta**, no formato: con el resaltador prendido, al soltar el mouse se resalta lo seleccionado y el cursor queda al final, para que se vea el color. Si todo lo seleccionado ya estaba resaltado, lo despinta; si estaba a medias, lo completa. El arrastre puede terminar fuera de la hoja.
+- Se prende con el botón del marcador o ⌘⇧H, y se apaga igual o con Esc. Si se prende con texto ya seleccionado, lo resalta (sirve para hacerlo con el teclado). No se guarda entre sesiones. Es excluyente con el modo desglose, porque los dos actúan al seleccionar.
+- Se deshace con ⌘Z. No cuenta como revisión.
+- Es una marca de trabajo: **no se exporta** a PDF, Fountain ni FDX. El backup JSON y el historial de versiones sí lo conservan.
+- Si alguien guarda el guion desde una versión vieja de la app (anterior al resaltador), los resaltados se pierden: esa versión no conoce el campo.

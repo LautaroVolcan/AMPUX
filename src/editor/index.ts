@@ -6,6 +6,7 @@ import { baseKeymap } from 'prosemirror-commands';
 import type { ElementType, Language, ProjectSettings, RevisionColor, ScriptElement, TagCategory } from '../types';
 import { revisionPlugin } from './revision';
 import { breakdownPlugin } from './breakdown';
+import { highlighterPlugin } from './highlighter';
 import type { PaginationResult } from '../pagination/paginate';
 import { docToElements, elementsToDoc, nodeText } from './schema';
 import { scriptKeymap } from './keymap';
@@ -32,6 +33,9 @@ export interface EditorCallbacks {
   tagLabel: (c: TagCategory) => string;
   removeTagLabel: (c?: TagCategory) => string;
   getBreakdown: () => boolean;
+  getHighlighter: () => boolean;
+  toggleHighlighter: () => void;
+  exitHighlighter: () => void;
   getRevision: () => RevisionColor | null;
   onChange: (elements: ScriptElement[]) => void;
   onPaginate: (result: PaginationResult, elements: ScriptElement[]) => void;
@@ -74,6 +78,7 @@ export function createEditor(mount: HTMLElement, elements: ScriptElement[], cb: 
       idsPlugin(),
       revisionPlugin(cb.getRevision),
       findPlugin(),
+      highlighterPlugin({ isActive: cb.getHighlighter, toggle: cb.toggleHighlighter, exit: cb.exitHighlighter }),
       pageViewPlugin({ getSettings: cb.getSettings, getMode: cb.getMode, onResult: cb.onPaginate }),
     ],
   });

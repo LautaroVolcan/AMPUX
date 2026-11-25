@@ -18,6 +18,8 @@ interface Props {
   zoom: number;
   typeLabels: boolean;
   breakdown: boolean;
+  highlighter: boolean;
+  onToggleHighlighter: () => void;
   onChange: (elements: ScriptElement[]) => void;
   onPaginate: (result: PaginationResult, elements: ScriptElement[]) => void;
   onSelection: (info: SelectionInfo) => void;
@@ -44,6 +46,9 @@ export const ScriptEditor = forwardRef<ScriptEditorHandle, Props>(function Scrip
       tagLabel: (c) => latest.current.t.tags[c],
       removeTagLabel: (c) => latest.current.t.breakdown.remove(c ? latest.current.t.tags[c] : undefined),
       getBreakdown: () => latest.current.props.breakdown,
+      getHighlighter: () => latest.current.props.highlighter,
+      toggleHighlighter: () => latest.current.props.onToggleHighlighter(),
+      exitHighlighter: () => latest.current.props.highlighter && latest.current.props.onToggleHighlighter(),
       getRevision: () => (latest.current.props.settings.revisionMode ? latest.current.props.settings.revisionColor : null),
       onChange: (els) => latest.current.props.onChange(els),
       onPaginate: (r, els) => latest.current.props.onPaginate(r, els),
@@ -79,6 +84,7 @@ export const ScriptEditor = forwardRef<ScriptEditorHandle, Props>(function Scrip
     settings.sceneNumbers !== 'none' ? `sn-${settings.sceneNumbers}` : '',
     settings.sceneSpacing === 2 ? 'spacing-2' : '',
     props.breakdown ? 'breakdown' : '',
+    props.highlighter ? 'highlighting' : '',
     `rev-${settings.revisionColor}`,
   ].join(' ');
 

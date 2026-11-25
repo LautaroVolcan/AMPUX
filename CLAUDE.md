@@ -4,12 +4,13 @@ Editor de guiones con formato de la industria (estilo Celtx/Final Draft), local-
 Spec original: `guionista-spec.md` (allí la app se llamaba "Guionista"; el nombre real es **AMPUX**).
 Decisiones técnicas: `DECISIONS.md`. Uso y estructura: `README.md`.
 
-## Estado (última sesión: 13/10/2026)
+## Estado (última sesión: 25/11/2026)
 
 - **Las 4 fases del spec están hechas**: editor + paginación + PDF/Fountain (1), proyectos, navegador de escenas, portada, buscar/reemplazar, notas, borrador, oscuro, zoom, estadísticas (2), tarjetas, diálogo dual, `.fdx`, numeración bloqueada (3), desglose, reportes CSV/PDF, revisiones con colores, historial de versiones (4).
-- 94 tests en verde (`npm test`). Con *Big Fish* (fountain.io) da 122 páginas y cada hoja de la vista mide exactamente 11": vista y PDF coinciden.
-- **Publicada**: https://lautarovolcan.github.io/AMPUX/ — repo `LautaroVolcan/AMPUX`, rama `main`.
-- Último commit: `cdf2c1f Fase 4: desglose, reportes, revisiones y versiones`.
+- 105 tests en verde (`npm test`). Con *Big Fish* (fountain.io) da 122 páginas y cada hoja de la vista mide exactamente 11": vista y PDF coinciden.
+- **Publicada**: https://ampux.lautaroferrandi.com/ (dominio propio en Pages; DNS en Cloudflare) — repo `LautaroVolcan/AMPUX`, rama `main`.
+- Después de la Fase 4: sincronización con Supabase y carpetas (16/10), dominio propio (17/10), resaltador (25/11).
+- Forma de trabajo: cada cambio en una rama con su PR; Lautaro revisa y mergea.
 
 ## Etapa actual: pulido con uso real
 
@@ -25,9 +26,10 @@ Ideas pendientes que ya surgieron (sin priorizar):
 ## Reglas importantes
 
 - **No romper los datos guardados.** Los guiones están en Supabase (tablas `projects`, `folders`, `snapshots`; ver `supabase/schema.sql`) y en IndexedDB (`ampux`, versión 3: stores `projects`, `snapshots`, `folders`) del navegador de quien la usa. La sincronización vive en `src/storage/db.ts`. Cualquier cambio de modelo debe ser aditivo: campos nuevos opcionales o completados en `normalizeProject` (`src/storage/db.ts`), migraciones que solo agregan stores. Hay un test de compatibilidad en `tests/phase4.test.ts`.
-- **Cada push a `main` publica.** `.github/workflows/deploy.yml` corre tests, compila con `VITE_BASE=/AMPUX/` y despliega a Pages. Confirmar con Lautaro antes de commitear o pushear.
+- **Cada push a `main` publica.** `.github/workflows/deploy.yml` corre tests, compila con `VITE_BASE=/` y despliega a Pages. Confirmar con Lautaro antes de commitear o pushear.
 - La paginación (`src/pagination/paginate.ts`) es una función pura y alimenta la vista y el PDF. Si se toca el corte de líneas, verificar que las hojas sigan midiendo 11" (ver abajo).
 - Las tablas de Tab/Enter viven en `src/editor/flow.ts`.
+- El resaltador vive en `src/editor/highlighter.ts` (mark `highlight` en `schema.ts`, campo `highlights` en el modelo).
 
 ## Trabajo con Lautaro
 
@@ -42,7 +44,7 @@ Ideas pendientes que ya surgieron (sin priorizar):
 npm install
 npm run dev                          # http://localhost:5173
 npm test                             # Vitest
-VITE_BASE=/AMPUX/ npm run build      # build igual al de Pages (salida en dist/)
+npm run build                        # build igual al de Pages (VITE_BASE=/ por defecto; salida en dist/)
 gh run list --limit 3                # estado de los deploys
 ```
 

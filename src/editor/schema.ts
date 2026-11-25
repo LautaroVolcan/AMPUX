@@ -1,5 +1,5 @@
 import { Schema, type MarkSpec, type NodeSpec, type Node as PMNode, type Mark } from 'prosemirror-model';
-import { ELEMENT_TYPES, newId, type ElementType, type ScriptElement, type TagCategory, type TagRef } from '../types';
+import { ELEMENT_TYPES, newId, type ElementType, type ScriptElement, type TagCategory, type TagRef, type TextRange } from '../types';
 
 function elementNode(type: ElementType): NodeSpec {
   return {
@@ -47,6 +47,12 @@ const marks: Record<string, MarkSpec> = {
     parseDOM: [{ tag: 'span[data-tag]', getAttrs: (dom) => ({ category: (dom as HTMLElement).getAttribute('data-tag') }) }],
     toDOM: (mark) => ['span', { class: `tag tag-${mark.attrs.category}`, 'data-tag': mark.attrs.category }, 0],
   },
+  // Resaltador. No es inclusivo: escribir justo después de un tramo resaltado no lo extiende.
+  highlight: {
+    inclusive: false,
+    parseDOM: [{ tag: 'mark.hl' }],
+    toDOM: () => ['mark', { class: 'hl' }, 0],
+  },
 };
 
 export const schema = new Schema({ nodes, marks });
@@ -60,10 +66,10 @@ export function isElementEmpty(node: PMNode): boolean {
   return text === '' || (node.type.name === 'parenthetical' && text === '()');
 }
 
-function inlineContent(text: string, tags: TagRef[] = []) {
-  // Cortes en cada borde de etiqueta y en cada salto de línea.
+function inlineContent(text: string, tags: TagRef[] = [], highlights: TextRange[] = []) {
+  // Cortes en cada borde de etiqueta o resaltado y en cada salto de línea.
   const cuts = new Set<number>([0, text.length]);
-  for (const t of tags) {
+  for (const t of [...tags, ...highlights]) {
     cuts.add(Math.max(0, Math.min(text.length, t.from)));
     cuts.add(Math.max(0, Math.min(text.length, t.to)));
   }
@@ -74,11 +80,14 @@ function inlineContent(text: string, tags: TagRef[] = []) {
     const [a, b] = [points[k], points[k + 1]];
     const seg = text.slice(a, b);
     if (!seg) continue;
+    const lit = highlights.some((h) => h.from <= a && h.to >= b);
     if (seg === '\n') {
-      out.push(schema.nodes.hard_break.create());
+      // El salto lleva el resaltado si cae dentro de un tramo, para que el tramo no se parta.
+      out.push(schema.nodes.hard_break.create(null, null, lit ? [schema.marks.highlight.create()] : []));
       continue;
     }
     const marks = tags.filter((t) => t.from <= a && t.to >= b).map((t) => schema.marks.tag.create({ category: t.category }));
+    if (lit) marks.push(schema.marks.highlight.create());
     out.push(schema.text(seg, marks));
   }
   return out;
@@ -108,6 +117,22 @@ export function nodeTags(node: PMNode): TagRef[] {
   return tags;
 }
 
+/** Tramos resaltados de un nodo, como rangos de texto (los adyacentes se unen). */
+export function nodeHighlights(node: PMNode): TextRange[] {
+  const out: TextRange[] = [];
+  let offset = 0;
+  let open: TextRange | null = null;
+  node.forEach((child) => {
+    const size = child.isText ? child.text!.length : 1;
+    if (child.marks.some((m: Mark) => m.type.name === 'highlight')) {
+      if (open) open.to = offset + size;
+      else out.push((open = { from: offset, to: offset + size }));
+    } else open = null;
+    offset += size;
+  });
+  return out;
+}
+
 export function elementToNode(el: ScriptElement): PMNode {
   const type = schema.nodes[el.type] ?? schema.nodes.action;
   const attrs = {
@@ -118,7 +143,7 @@ export function elementToNode(el: ScriptElement): PMNode {
     color: el.color ?? null,
     revision: el.revision ?? null,
   };
-  return type.create(attrs, inlineContent(el.text, el.tags));
+  return type.create(attrs, inlineContent(el.text, el.tags, el.highlights));
 }
 
 export function elementsToDoc(elements: ScriptElement[]): PMNode {
@@ -137,6 +162,8 @@ export function docToElements(doc: PMNode): ScriptElement[] {
     if (node.attrs.revision) el.revision = node.attrs.revision;
     const tags = nodeTags(node);
     if (tags.length) el.tags = tags;
+    const highlights = nodeHighlights(node);
+    if (highlights.length) el.highlights = highlights;
     out.push(el);
   });
   return out;

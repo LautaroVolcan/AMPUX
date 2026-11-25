@@ -45,6 +45,7 @@ export const es = {
     titlePage: 'Portada',
     stats: 'Estadísticas',
     find: 'Buscar',
+    highlighter: 'Resaltador',
     draft: 'Borrador',
     paged: 'Páginas',
     scenes: 'Escenas',

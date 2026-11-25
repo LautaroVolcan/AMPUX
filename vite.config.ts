@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-// En GitHub Pages la app vive en /AMPUX/ (el workflow define VITE_BASE).
+// El workflow define VITE_BASE (hoy "/": la app vive en ampux.lautaroferrandi.com).
 const base = process.env.VITE_BASE ?? '/';
 
 export default defineConfig({

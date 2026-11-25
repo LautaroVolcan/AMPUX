@@ -13,6 +13,7 @@ import { CardBoard, type Card } from './CardBoard';
 import type { PaginationResult } from '../pagination/paginate';
 import { moveScene, replaceDocument, scrollToElement, type SelectionInfo } from '../editor';
 import { setElementAttrs, setElementType, toggleDual } from '../editor/commands';
+import { toggleHighlight } from '../editor/highlighter';
 import { serializeFountain } from '../formats/fountain/serialize';
 import { exportJSON, exportPlainText } from '../formats/text/plain';
 import { download, loadFont, renderPDF, revisedPages } from '../formats/pdf/render';
@@ -301,7 +302,21 @@ function Workspace({ initial, prefs, setPrefs, onClose }: Props & { initial: Pro
   const toggleBreakdown = () => {
     const on = !prefs.breakdown;
     setPrefs(on ? { breakdown: true, showNotes: true, rightTab: 'breakdown' } : { breakdown: false });
+    if (on) setHighlighter(false);
     view()?.focus();
+  };
+
+  // Resaltador: herramienta de la sesión (no se guarda). Si se prende con texto seleccionado, lo resalta.
+  const [highlighter, setHighlighter] = useState(false);
+  const toggleHighlighter = () => {
+    const on = !highlighter;
+    setHighlighter(on);
+    const v = view();
+    if (on) {
+      if (prefs.breakdown) setPrefs({ breakdown: false });
+      if (v && !v.state.selection.empty) toggleHighlight(v.state, v.dispatch);
+    }
+    v?.focus();
   };
 
   const sceneNote = selection.sceneId ? project.notes[selection.sceneId] ?? '' : '';
@@ -340,6 +355,8 @@ function Workspace({ initial, prefs, setPrefs, onClose }: Props & { initial: Pro
         onOpen={setDialog}
         breakdown={prefs.breakdown}
         onToggleBreakdown={toggleBreakdown}
+        highlighter={highlighter}
+        onToggleHighlighter={toggleHighlighter}
         revisionChip={project.settings.revisionMode ? t.revisions.chip(t.revisions.colors[project.settings.revisionColor]) : null}
         revisionColor={project.settings.revisionColor}
       />
@@ -387,6 +404,8 @@ function Workspace({ initial, prefs, setPrefs, onClose }: Props & { initial: Pro
             zoom={prefs.zoom}
             typeLabels={prefs.typeLabels}
             breakdown={prefs.breakdown}
+            highlighter={highlighter}
+            onToggleHighlighter={toggleHighlighter}
             onChange={onChange}
             onPaginate={onPaginate}
             onSelection={setSelection}

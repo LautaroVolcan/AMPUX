@@ -1,6 +1,6 @@
 # AMPUX
 
-**App publicada:** https://lautarovolcan.github.io/AMPUX/ (cada push a `main` corre los tests, compila y publica con GitHub Actions).
+**App publicada:** https://ampux.lautaroferrandi.com/ (cada push a `main` corre los tests, compila y publica con GitHub Actions).
 
 Editor de guiones con formato estándar de la industria. Escribís y el editor formatea solo cada elemento (escena, acción, personaje, diálogo…), con Tab/Enter para pasar de uno a otro. Funciona en el navegador, guarda todo localmente (IndexedDB) y se puede instalar como app (PWA).
 
@@ -31,6 +31,7 @@ Sin esas variables la app guarda solo en el navegador.
 | Shift+Enter | Salto de línea dentro del mismo elemento |
 | ⌘D | Diálogo dual (pone el personaje al lado del anterior) |
 | ⌘S / ⌘F / ⌘Z | Guardar, buscar y reemplazar, deshacer |
+| ⌘⇧H | Resaltador: con la herramienta prendida, lo que se selecciona queda resaltado en naranja (pasar de nuevo lo despinta). Esc la apaga. |
 
 Detección automática: `INT.` / `EXT.` al inicio de una acción la convierte en encabezado; una línea en mayúsculas que termina en `:` pasa a transición; `(` debajo de un personaje crea una acotación.
 
@@ -57,5 +58,6 @@ tests/          Vitest
 - **Fase 2** (múltiples proyectos, navegador con drag & drop, portada, buscar/reemplazar, notas, modo borrador, modo oscuro, zoom, estadísticas) — hecha.
 - **Fase 3** (tablero de tarjetas con sinopsis y color, diálogo dual, import/export `.fdx`, numeración de escenas bloqueada) — hecha.
 - **Fase 4** (desglose con etiquetas, reportes CSV/PDF, modo revisión con colores y asteriscos, exportar páginas cambiadas, historial de versiones) — hecha. Todo vive en el menú **Producción** de la barra superior.
+- **Pulido con uso real**: resaltador (botón del marcador en la barra superior, ⌘⇧H).
 
 Fuente: [Courier Prime](https://github.com/quoteunquoteapps/CourierPrime) (SIL Open Font License).
