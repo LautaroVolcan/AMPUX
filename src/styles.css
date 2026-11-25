@@ -17,6 +17,12 @@
   font-weight: 400;
   font-style: italic;
 }
+@font-face {
+  font-family: 'Courier Prime';
+  src: url('/fonts/CourierPrime-BoldItalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+}
 
 /* ---------- Tokens ---------- */
 :root {
@@ -34,6 +40,7 @@
   --accent-ink: #ffffff;
   --hit: #fde68a;
   --hit-current: #f59e0b;
+  --hl: #ffae57;
   --danger: #b42318;
   --gap: #ecebe8;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px rgb(0 0 0 / 0.06);
@@ -75,6 +82,7 @@
     --accent-ink: #141414;
     --hit: #5b4a12;
     --hit-current: #a16207;
+    --hl: rgb(255 150 40 / 0.55);
     --danger: #f97066;
     --gap: #0e0e0e;
     --red: #b35d5d;
@@ -102,6 +110,7 @@
   --accent-ink: #141414;
   --hit: #5b4a12;
   --hit-current: #a16207;
+  --hl: rgb(255 150 40 / 0.55);
   --danger: #f97066;
   --gap: #0e0e0e;
   --red: #b35d5d;
@@ -474,7 +483,19 @@ textarea.input {
   gap: 4px;
   min-width: 0;
 }
+/* Izquierda y derecha reparten el sobrante en partes iguales: el centro no se mueve cuando cambia el título.
+   La derecha nunca baja de su contenido; la izquierda sí (el título se corta con "…"). */
+.topbar > .tb-group:first-child {
+  flex: 1 1 0;
+  min-width: 120px;
+}
+.tb-right {
+  flex: 1 1 0;
+  min-width: max-content;
+  justify-content: flex-end;
+}
 .tb-center {
+  flex: none;
   gap: 14px;
 }
 .tb-sep {
@@ -485,6 +506,7 @@ textarea.input {
 }
 .tb-title {
   min-width: 80px;
+  flex: 0 1 auto;
   max-width: 280px;
   padding: 4px 8px;
   border: 1px solid transparent;
@@ -514,6 +536,7 @@ textarea.input {
 }
 .tb-meta {
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
   font-size: 12px;
   white-space: nowrap;
 }
@@ -521,6 +544,8 @@ textarea.input {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  /* Ancho fijo para "Guardado" / "Guardando…": que el centro no salte al guardar. */
+  min-width: 7.5em;
 }
 .save-state .dot {
   width: 6px;
@@ -973,6 +998,36 @@ textarea.input {
   outline-offset: 1px;
 }
 
+/* ---------- Estilos de texto ---------- */
+.tb-styles {
+  display: inline-flex;
+  gap: 0;
+}
+.style-btn {
+  width: 26px;
+  font-family: 'Courier Prime', ui-monospace, monospace;
+  font-size: 14px;
+}
+.style-bold { font-weight: 700; }
+.style-italic { font-style: italic; }
+.style-underline { text-decoration: underline; text-underline-offset: 2px; }
+.script strong { font-weight: 700; }
+.script em { font-style: italic; }
+.script u { text-decoration: underline; text-underline-offset: 2px; }
+
+/* ---------- Resaltador ---------- */
+.script mark.hl {
+  background: var(--hl);
+  color: inherit;
+  border-radius: 1px;
+}
+.sheet.highlighting .script {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M14 4l6 6-8 8H6v-6z' fill='%23ffae57' stroke='%23141414' stroke-width='1.5' stroke-linejoin='round'/%3E%3Cpath d='M10.5 7.5l6 6' stroke='%23141414' stroke-width='1.5'/%3E%3C/svg%3E") 6 18, text;
+}
+.hl-btn.on svg path:first-child {
+  fill: var(--hl);
+}
+
 /* ---------- Desglose ---------- */
 .breakdown .tag {
   background: color-mix(in srgb, var(--tag-color) 18%, transparent);
@@ -1417,6 +1472,29 @@ kbd {
   font-variant-numeric: tabular-nums;
 }
 
+/* Barra superior en pantallas medianas: primero se compacta lo accesorio, para que el título y las herramientas entren. */
+@media (max-width: 1360px) {
+  .wordmark.small,
+  .btn-label,
+  .save-label {
+    display: none;
+  }
+  .save-state {
+    min-width: 0;
+    padding: 0 4px;
+  }
+}
+@media (max-width: 1180px) {
+  .zoom,
+  .tb-center > .tb-meta:not(.save-state) {
+    display: none;
+  }
+}
+@media (max-width: 1000px) {
+  .tb-select {
+    min-width: 112px;
+  }
+}
 @media (max-width: 900px) {
   .tb-meta,
   .zoom,

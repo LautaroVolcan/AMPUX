@@ -1,4 +1,5 @@
-import { newId, type CardColor, type ElementType, type ScriptElement, type TitlePage } from '../../types';
+import { TEXT_STYLES, newId, type CardColor, type ElementType, type ScriptElement, type StyleRange, type TextStyle, type TitlePage } from '../../types';
+import { rangesFromChars, styleRuns } from '../styleRuns';
 import { findDualPairs } from '../../pagination/dual';
 
 /** Tipos de párrafo de Final Draft ↔ tipos de AMPUX. */
@@ -65,8 +66,21 @@ function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function paragraph(type: string, text: string, attrs = '', inner = ''): string {
-  return `    <Paragraph Type="${type}"${attrs}>${inner}\n      <Text>${esc(text)}</Text>\n    </Paragraph>`;
+const FDX_STYLE: Record<TextStyle, string> = { bold: 'Bold', italic: 'Italic', underline: 'Underline' };
+
+/** Un <Text> por tramo de estilo, con Style="Bold+Italic"… como Final Draft. */
+function textRuns(text: string, styles?: StyleRange[]): string {
+  if (!text) return '<Text></Text>';
+  return styleRuns(text, styles)
+    .map((r) => {
+      const style = r.styles.length ? ` Style="${r.styles.map((st) => FDX_STYLE[st]).join('+')}"` : '';
+      return `<Text${style}>${esc(r.text)}</Text>`;
+    })
+    .join('');
+}
+
+function paragraph(type: string, el: ScriptElement, attrs = '', inner = ''): string {
+  return `    <Paragraph Type="${type}"${attrs}>${inner}\n      ${textRuns(el.text, el.styles)}\n    </Paragraph>`;
 }
 
 export interface FdxOptions {
@@ -92,7 +106,7 @@ export function serializeFDX(elements: ScriptElement[], titlePage?: Partial<Titl
         inner = `\n      <SceneProperties Title=""${color}>${summary}</SceneProperties>`;
       }
     }
-    return paragraph(TO_FDX[el.type], el.text, attrs, inner);
+    return paragraph(TO_FDX[el.type], el, attrs, inner);
   };
 
   for (let i = 0; i < elements.length; i++) {
@@ -152,6 +166,17 @@ function paragraphText(p: Element): string {
     .join('');
 }
 
+/** Estilos de los <Text> de un párrafo (Style="Bold+Underline"…), sobre el texto unido. */
+function paragraphStyles(p: Element): StyleRange[] {
+  const chars: Set<TextStyle>[] = [];
+  for (const t of directChildren(p, 'Text')) {
+    const words = (t.getAttribute('Style') ?? '').toLowerCase().split('+');
+    const set = new Set(TEXT_STYLES.filter((st) => words.includes(st)));
+    for (let i = 0; i < (t.textContent ?? '').length; i++) chars.push(set);
+  }
+  return rangesFromChars(chars);
+}
+
 export function parseFDX(xml: string): FdxDocument {
   const doc = new DOMParser().parseFromString(xml, 'application/xml');
   if (doc.getElementsByTagName('parsererror').length) throw new Error('XML inválido');
@@ -164,6 +189,8 @@ export function parseFDX(xml: string): FdxDocument {
   const readParagraph = (p: Element, dualSecond = false) => {
     const type = FROM_FDX[(p.getAttribute('Type') ?? '').toLowerCase()] ?? 'action';
     const el: ScriptElement = { id: newId(), type, text: paragraphText(p) };
+    const styles = paragraphStyles(p);
+    if (styles.length) el.styles = styles;
     if (type === 'scene') {
       const num = p.getAttribute('Number');
       if (num) el.sceneNumber = num;

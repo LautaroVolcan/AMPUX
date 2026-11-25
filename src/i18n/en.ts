@@ -47,6 +47,8 @@ export const en: Dict = {
     titlePage: 'Title page',
     stats: 'Statistics',
     find: 'Find',
+    highlighter: 'Highlighter',
+    styles: { bold: 'Bold', italic: 'Italic', underline: 'Underline' },
     draft: 'Draft',
     paged: 'Pages',
     scenes: 'Scenes',

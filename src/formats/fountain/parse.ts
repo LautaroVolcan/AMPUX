@@ -1,4 +1,5 @@
 import { newId, type ElementType, type ScriptElement, type TitlePage } from '../../types';
+import { parseEmphasis } from './emphasis';
 
 export interface FountainDocument {
   titlePage: Partial<TitlePage>;
@@ -74,7 +75,15 @@ export function parseFountain(source: string): FountainDocument {
 
   const elements: ScriptElement[] = [];
   const add = (type: ElementType, value: string, extra: Partial<ScriptElement> = {}) => {
-    elements.push({ id: newId(), type, text: stripEmphasis(value), ...extra });
+    const { text, styles } = parseEmphasis(value);
+    elements.push({ id: newId(), type, text, ...(styles.length ? { styles } : {}), ...extra });
+  };
+  /** Agrega una línea más al elemento, con sus estilos corridos. */
+  const appendLine = (el: ScriptElement, value: string) => {
+    const { text, styles } = parseEmphasis(value);
+    const base = el.text.length + 1;
+    el.text += '\n' + text;
+    if (styles.length) el.styles = [...(el.styles ?? []), ...styles.map((r) => ({ ...r, from: r.from + base, to: r.to + base }))];
   };
   const last = () => elements[elements.length - 1];
 
@@ -102,7 +111,7 @@ export function parseFountain(source: string): FountainDocument {
       if (line.startsWith('(') && line.endsWith(')')) {
         add('parenthetical', line);
       } else if (last()?.type === 'dialogue') {
-        last().text += '\n' + stripEmphasis(line);
+        appendLine(last(), line);
       } else {
         add('dialogue', line);
       }
@@ -202,7 +211,7 @@ export function parseFountain(source: string): FountainDocument {
 
   function addAction(content: string) {
     if (!prevBlank && last()?.type === 'action') {
-      last().text += '\n' + stripEmphasis(content);
+      appendLine(last(), content);
     } else {
       add('action', content);
     }

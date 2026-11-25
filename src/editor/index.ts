@@ -6,6 +6,8 @@ import { baseKeymap } from 'prosemirror-commands';
 import type { ElementType, Language, ProjectSettings, RevisionColor, ScriptElement, TagCategory } from '../types';
 import { revisionPlugin } from './revision';
 import { breakdownPlugin } from './breakdown';
+import { highlighterPlugin } from './highlighter';
+import { STYLE_KEYS, activeStyles, type ActiveStyles } from './textStyles';
 import type { PaginationResult } from '../pagination/paginate';
 import { docToElements, elementsToDoc, nodeText } from './schema';
 import { scriptKeymap } from './keymap';
@@ -22,6 +24,8 @@ export interface SelectionInfo {
   sceneId: string | null;
   /** ¿El bloque de diálogo actual está en modo dual? */
   dual: boolean;
+  /** Negrita / cursiva / subrayado en el cursor o en toda la selección. */
+  styles: ActiveStyles;
 }
 
 export interface EditorCallbacks {
@@ -32,6 +36,9 @@ export interface EditorCallbacks {
   tagLabel: (c: TagCategory) => string;
   removeTagLabel: (c?: TagCategory) => string;
   getBreakdown: () => boolean;
+  getHighlighter: () => boolean;
+  toggleHighlighter: () => void;
+  exitHighlighter: () => void;
   getRevision: () => RevisionColor | null;
   onChange: (elements: ScriptElement[]) => void;
   onPaginate: (result: PaginationResult, elements: ScriptElement[]) => void;
@@ -55,7 +62,7 @@ function selectionInfo(state: EditorState): SelectionInfo {
   while (k > 0 && ['dialogue', 'parenthetical'].includes(state.doc.child(k).type.name)) k--;
   const unit = state.doc.child(k);
   const dual = unit.type.name === 'character' && !!unit.attrs.dual;
-  return { type, sceneId, dual };
+  return { type, sceneId, dual, styles: activeStyles(state) };
 }
 
 export function createEditor(mount: HTMLElement, elements: ScriptElement[], cb: EditorCallbacks): EditorView {
@@ -68,12 +75,13 @@ export function createEditor(mount: HTMLElement, elements: ScriptElement[], cb: 
       menu.plugin,
       scriptKeymap({ openTypeMenu: menu.open, save: cb.onSave, find: cb.onFind }),
       history(),
-      keymap({ 'Mod-z': undo, 'Mod-Shift-z': redo, 'Mod-y': redo }),
+      keymap({ 'Mod-z': undo, 'Mod-Shift-z': redo, 'Mod-y': redo, ...STYLE_KEYS }),
       keymap(baseKeymap),
       autodetectPlugin(),
       idsPlugin(),
       revisionPlugin(cb.getRevision),
       findPlugin(),
+      highlighterPlugin({ isActive: cb.getHighlighter, toggle: cb.toggleHighlighter, exit: cb.exitHighlighter }),
       pageViewPlugin({ getSettings: cb.getSettings, getMode: cb.getMode, onResult: cb.onPaginate }),
     ],
   });
@@ -87,7 +95,7 @@ export function createEditor(mount: HTMLElement, elements: ScriptElement[], cb: 
       view.updateState(next);
       if (tr.docChanged) cb.onChange(docToElements(next.doc));
       const info = selectionInfo(next);
-      const key = `${info.type}|${info.sceneId}|${info.dual}`;
+      const key = `${info.type}|${info.sceneId}|${info.dual}|${info.styles.bold}${info.styles.italic}${info.styles.underline}`;
       if (key !== lastInfo) {
         lastInfo = key;
         cb.onSelection(info);

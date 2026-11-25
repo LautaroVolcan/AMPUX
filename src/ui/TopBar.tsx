@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useT } from '../i18n';
-import { ELEMENT_TYPES, type ElementType } from '../types';
+import { ELEMENT_TYPES, TEXT_STYLES, type ElementType, type TextStyle } from '../types';
 import { Icon } from './icons';
 import { getSyncStatus, onSyncStatus } from '../storage/db';
 
@@ -28,6 +28,10 @@ interface Props {
   onOpen: (dialog: Dialog) => void;
   breakdown: boolean;
   onToggleBreakdown: () => void;
+  highlighter: boolean;
+  onToggleHighlighter: () => void;
+  styles: Record<TextStyle, boolean>;
+  onStyle: (s: TextStyle) => void;
   /** Texto del indicador de revisión, si el modo revisión está activo. */
   revisionChip: string | null;
   revisionColor: string;
@@ -36,6 +40,8 @@ interface Props {
 export type Dialog = 'settings' | 'titlePage' | 'stats' | 'reports' | 'revisions' | 'versions';
 
 export type ExportKind = 'pdf' | 'pdfNoTitle' | 'fountain' | 'fdx' | 'txt' | 'json';
+
+const STYLE_KEY: Record<TextStyle, string> = { bold: 'B', italic: 'I', underline: 'U' };
 
 export const ZOOMS = [0.75, 0.9, 1, 1.1, 1.25, 1.5];
 
@@ -99,6 +105,31 @@ export function TopBar(p: Props) {
         </select>
         <button className={`chip${p.dual ? ' on' : ''}`} onClick={p.onDual} title={t.top.dualHint}>
           {t.top.dual}
+        </button>
+        <div className="tb-styles" role="group">
+          {TEXT_STYLES.map((st) => (
+            <button
+              key={st}
+              className={`icon-btn style-btn style-${st}${p.styles[st] ? ' on' : ''}`}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => p.onStyle(st)}
+              title={`${t.top.styles[st]} (⌘${STYLE_KEY[st]})`}
+              aria-label={t.top.styles[st]}
+              aria-pressed={p.styles[st]}
+            >
+              {STYLE_KEY[st]}
+            </button>
+          ))}
+        </div>
+        <button
+          className={`icon-btn hl-btn${p.highlighter ? ' on' : ''}`}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={p.onToggleHighlighter}
+          title={`${t.top.highlighter} (⌘⇧H)`}
+          aria-label={t.top.highlighter}
+          aria-pressed={p.highlighter}
+        >
+          <Icon.highlighter />
         </button>
         <span className="tb-meta">{t.top.pages(p.pages)}</span>
         {p.breakdown && (
@@ -179,12 +210,13 @@ export function TopBar(p: Props) {
         <div className="menu-anchor">
           <button
             className="btn"
+            title={t.top.export}
             onClick={(e) => {
               e.stopPropagation();
               setExportOpen(!exportOpen);
             }}
           >
-            <Icon.download /> {t.top.export}
+            <Icon.download /> <span className="btn-label">{t.top.export}</span>
           </button>
           {exportOpen && (
             <div className="menu right">
@@ -215,9 +247,12 @@ function SaveState({ saving }: { saving: boolean }) {
   const busy = saving || sync === 'pending';
   const offline = !busy && sync === 'error';
   return (
-    <span className={`tb-meta save-state${busy ? ' saving' : ''}${offline ? ' offline' : ''}`} title={offline ? t.top.offlineHint : undefined}>
+    <span
+      className={`tb-meta save-state${busy ? ' saving' : ''}${offline ? ' offline' : ''}`}
+      title={offline ? t.top.offlineHint : busy ? t.top.saving : t.top.saved}
+    >
       <span className="dot" />
-      {busy ? t.top.saving : offline ? t.top.savedLocal : t.top.saved}
+      <span className="save-label">{busy ? t.top.saving : offline ? t.top.savedLocal : t.top.saved}</span>
     </span>
   );
 }
