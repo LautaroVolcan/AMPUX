@@ -1069,6 +1069,36 @@ textarea.input {
   z-index: 2;
 }
 
+/* Quién más está en el guion (barra superior). */
+.peers {
+  display: inline-flex;
+  align-items: center;
+  padding-left: 4px;
+}
+.peer {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-left: -4px;
+  padding: 0;
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  background: var(--peer-color, var(--faint));
+  color: #fff;
+  font: 600 9.5px/1 var(--ui);
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+.peer:hover {
+  transform: translateY(-1px);
+}
+.peer.more {
+  background: var(--hover);
+  color: var(--muted);
+  cursor: default;
+}
+
 /* ---------- Estilos de texto ---------- */
 .tb-styles {
   display: inline-flex;

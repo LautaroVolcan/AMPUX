@@ -59,6 +59,8 @@ export const es = {
     stats: 'Estadísticas',
     find: 'Buscar',
     highlighter: 'Resaltador',
+    peers: (names: string[]) => `También en este guion: ${names.join(', ')}`,
+    peerHint: (name: string) => `${name} está en este guion. Clic para ir a su cursor.`,
     styles: { bold: 'Negrita', italic: 'Cursiva', underline: 'Subrayado' },
     draft: 'Borrador',
     paged: 'Páginas',

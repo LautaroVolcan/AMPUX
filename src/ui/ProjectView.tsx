@@ -6,6 +6,7 @@ import { saveSnapshot } from '../storage/db';
 import { schema } from '../editor/schema';
 import { openShared, projectFromDoc, type SharedSession } from '../collab/shared';
 import { META_KEYS, onRemoteMeta, writeMeta, type SharedMeta } from '../collab/meta';
+import { usePeers } from '../collab/usePeers';
 import { toCSV, type Table } from '../reports/reports';
 import { tableToPDF } from '../reports/pdf';
 import { BreakdownPanel, ReportsDialog, RevisionsDialog, VersionsDialog } from './Production';
@@ -67,7 +68,9 @@ export function ProjectView(props: Props) {
   return <Workspace {...props} initial={opened.project} shared={opened.shared} />;
 }
 
-function Workspace({ initial, shared, prefs, setPrefs, onClose }: Props & { initial: Project; shared: SharedSession | null }) {
+function Workspace({ initial, shared, prefs, setPrefs, onClose, username }: Props & { initial: Project; shared: SharedSession | null }) {
+  // Quién más tiene abierto el guion (tiempo real).
+  const peers = usePeers(shared?.provider.awareness ?? null, username);
   const t = useT();
   const editor = useRef<ScriptEditorHandle>(null);
   const [project, setProject] = useState<Project>(initial);
@@ -404,6 +407,12 @@ function Workspace({ initial, shared, prefs, setPrefs, onClose }: Props & { init
         }}
         revisionChip={project.settings.revisionMode ? t.revisions.chip(t.revisions.colors[project.settings.revisionColor]) : null}
         revisionColor={project.settings.revisionColor}
+        peers={peers}
+        onPeer={(name) => {
+          // Lleva al cursor de esa persona.
+          const label = [...document.querySelectorAll('.remote-cursor-name')].find((el) => el.textContent === name);
+          label?.closest('.remote-cursor')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }}
       />
       <div className="workspace">
         {prefs.showNav && (
