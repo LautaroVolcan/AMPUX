@@ -1035,6 +1035,40 @@ textarea.input {
   outline-offset: 1px;
 }
 
+/* ---------- Tiempo real: cursores de otras personas ---------- */
+/* Ancho cero: no corren el texto (la paginación no cambia). */
+.remote-cursor {
+  position: relative;
+  display: inline-block;
+  width: 0;
+  height: 0;
+  vertical-align: baseline;
+  pointer-events: none;
+}
+/* La línea se dibuja por fuera de la caja (ancho y alto cero): no estira el renglón ni corre la paginación. */
+.remote-cursor::after {
+  content: '';
+  position: absolute;
+  bottom: -0.25em;
+  left: -1px;
+  width: 2px;
+  height: 1.15em;
+  background: var(--cursor-color);
+}
+.remote-cursor-name {
+  position: absolute;
+  bottom: 0.95em;
+  left: -1px;
+  padding: 2px 5px;
+  border-radius: 4px 4px 4px 0;
+  background: var(--cursor-color);
+  color: #fff;
+  font: 500 10px/1.2 var(--ui);
+  white-space: nowrap;
+  user-select: none;
+  z-index: 2;
+}
+
 /* ---------- Estilos de texto ---------- */
 .tb-styles {
   display: inline-flex;

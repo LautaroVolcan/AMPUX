@@ -30,6 +30,12 @@ Con Supabase configurado, AMPUX pide **usuario y contraseña**. Todos los usuari
 - Para cambiar una contraseña olvidada: mismo panel, en el usuario.
 - Las reglas que exigen sesión están en `supabase/login.sql` (y en `schema.sql` para proyectos nuevos).
 
+### Tiempo real
+
+Dos o más personas pueden editar el mismo guion a la vez y ven los cursores de los demás. Necesita correr `supabase/realtime.sql` y apagar **Realtime → Settings → Allow public access**.
+
+Para probarlo en local sin Supabase: abrir dos pestañas con `http://localhost:5173/?collab=local&name=Ana` y `…&name=Beto`, y el mismo guion.
+
 ## Cómo se escribe
 
 | Tecla | Qué hace |
@@ -68,6 +74,6 @@ tests/          Vitest
 - **Fase 2** (múltiples proyectos, navegador con drag & drop, portada, buscar/reemplazar, notas, modo borrador, modo oscuro, zoom, estadísticas) — hecha.
 - **Fase 3** (tablero de tarjetas con sinopsis y color, diálogo dual, import/export `.fdx`, numeración de escenas bloqueada) — hecha.
 - **Fase 4** (desglose con etiquetas, reportes CSV/PDF, modo revisión con colores y asteriscos, exportar páginas cambiadas, historial de versiones) — hecha. Todo vive en el menú **Producción** de la barra superior.
-- **Pulido con uso real**: resaltador (botón del marcador en la barra superior, ⌘⇧H); negrita, cursiva y subrayado; la barra superior ya no se corre al escribir el título; login con usuario y contraseña.
+- **Pulido con uso real**: resaltador (botón del marcador en la barra superior, ⌘⇧H); negrita, cursiva y subrayado; la barra superior ya no se corre al escribir el título; login con usuario y contraseña; edición en tiempo real (prototipo).
 
 Fuente: [Courier Prime](https://github.com/quoteunquoteapps/CourierPrime) (SIL Open Font License).

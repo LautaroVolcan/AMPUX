@@ -11,6 +11,11 @@ function projectFromHash() {
   return m ? decodeURIComponent(m[1]) : null;
 }
 
+/** Sin login (desarrollo con `?collab=local`): el nombre sale de `?name=`. */
+function localName() {
+  return new URLSearchParams(location.search).get('name') ?? 'Invitado';
+}
+
 export function App() {
   const [prefs, setPrefs] = usePrefs();
   const [projectId, setProjectId] = useState<string | null>(projectFromHash);
@@ -41,7 +46,14 @@ export function App() {
       ) : auth.status === 'signedOut' ? (
         <Login />
       ) : projectId ? (
-        <ProjectView key={projectId} projectId={projectId} prefs={prefs} setPrefs={setPrefs} onClose={() => open(null)} />
+        <ProjectView
+          key={projectId}
+          projectId={projectId}
+          prefs={prefs}
+          setPrefs={setPrefs}
+          onClose={() => open(null)}
+          username={auth.status === 'signedIn' ? auth.username : localName()}
+        />
       ) : (
         <Home onOpen={open} username={auth.status === 'signedIn' ? auth.username : null} />
       )}

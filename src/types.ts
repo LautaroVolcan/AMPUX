@@ -129,6 +129,11 @@ export interface Project {
   /** Notas por escena, indexadas por id del encabezado. */
   notes: Record<string, string>;
   pageCount?: number;
+  /**
+   * `updatedAt` del último guardado hecho en modo tiempo real. Si difiere de `updatedAt`, la última edición
+   * se hizo fuera del tiempo real (sin conexión o con una versión vieja de la app).
+   */
+  liveSavedAt?: number;
   /** Carpeta en la pantalla de Proyectos (sin carpeta = raíz). */
   folderId?: string;
   updatedAt: number;

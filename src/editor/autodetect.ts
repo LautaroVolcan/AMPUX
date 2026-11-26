@@ -1,6 +1,7 @@
 import { Plugin, TextSelection, type Transaction } from 'prosemirror-state';
 import { newId, type ElementType } from '../types';
 import { nodeText, schema } from './schema';
+import { hasLocalChange, isRemote } from './remote';
 
 export const SCENE_PREFIX_RE = /^(int|ext|est|int\.?\/ext|ext\.?\/int|i\/e)[.\s]/i;
 
@@ -17,7 +18,7 @@ export function detectType(type: ElementType, text: string): ElementType | null 
 export function autodetectPlugin() {
   return new Plugin({
     appendTransaction(trs, _old, state) {
-      if (!trs.some((tr) => tr.docChanged && tr.getMeta('uiEvent') !== 'paste' && !tr.getMeta('noAutodetect'))) return null;
+      if (!trs.some((tr) => tr.docChanged && !isRemote(tr) && tr.getMeta('uiEvent') !== 'paste' && !tr.getMeta('noAutodetect'))) return null;
       const { $from } = state.selection;
       if ($from.depth < 1) return null;
       const node = $from.node(1);
@@ -52,7 +53,7 @@ export function autodetectPlugin() {
 export function idsPlugin() {
   return new Plugin({
     appendTransaction(trs, _old, state) {
-      if (!trs.some((tr) => tr.docChanged)) return null;
+      if (!hasLocalChange(trs)) return null;
       const seen = new Set<string>();
       let tr: Transaction | null = null;
       state.doc.forEach((node, offset) => {
