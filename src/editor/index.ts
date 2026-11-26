@@ -1,6 +1,11 @@
 import { EditorState, TextSelection } from 'prosemirror-state';
 import { EditorView } from 'prosemirror-view';
 import { history, undo, redo } from 'prosemirror-history';
+import type { Plugin } from 'prosemirror-state';
+import type * as Y from 'yjs';
+import type { Awareness } from 'y-protocols/awareness';
+import { initProseMirrorDoc, redoCommand, undoCommand, yCursorPlugin, ySyncPlugin, yUndoPlugin } from 'y-prosemirror';
+import { cursorBuilder, selectionBuilder } from '../collab/presence';
 import { keymap } from 'prosemirror-keymap';
 import { baseKeymap } from 'prosemirror-commands';
 import type { ElementType, Language, ProjectSettings, RevisionColor, ScriptElement, TagCategory } from '../types';
@@ -9,7 +14,7 @@ import { breakdownPlugin } from './breakdown';
 import { highlighterPlugin } from './highlighter';
 import { STYLE_KEYS, activeStyles, type ActiveStyles } from './textStyles';
 import type { PaginationResult } from '../pagination/paginate';
-import { docToElements, elementsToDoc, nodeText } from './schema';
+import { docToElements, elementsToDoc, nodeText, schema } from './schema';
 import { scriptKeymap } from './keymap';
 import { autodetectPlugin, idsPlugin } from './autodetect';
 import { autocompletePlugin } from './autocomplete';
@@ -65,17 +70,34 @@ function selectionInfo(state: EditorState): SelectionInfo {
   return { type, sceneId, dual, styles: activeStyles(state) };
 }
 
-export function createEditor(mount: HTMLElement, elements: ScriptElement[], cb: EditorCallbacks): EditorView {
+/** Edición en tiempo real: el documento vive en un Y.XmlFragment compartido. */
+export interface CollabOptions {
+  fragment: Y.XmlFragment;
+  awareness: Awareness;
+}
+
+/** Sin tiempo real: historial de ProseMirror. Con tiempo real: el de Yjs (⌘Z deshace solo lo propio) + cursores ajenos. */
+function historyPlugins(collab?: CollabOptions, mapping?: unknown): Plugin[] {
+  if (!collab) return [history(), keymap({ 'Mod-z': undo, 'Mod-Shift-z': redo, 'Mod-y': redo, ...STYLE_KEYS })];
+  return [
+    ySyncPlugin(collab.fragment, { mapping } as Parameters<typeof ySyncPlugin>[1]),
+    yCursorPlugin(collab.awareness, { cursorBuilder, selectionBuilder }),
+    yUndoPlugin(),
+    keymap({ 'Mod-z': undoCommand, 'Mod-Shift-z': redoCommand, 'Mod-y': redoCommand, ...STYLE_KEYS }),
+  ];
+}
+
+export function createEditor(mount: HTMLElement, elements: ScriptElement[], cb: EditorCallbacks, collab?: CollabOptions): EditorView {
   const menu = createTypeMenu(cb.typeLabel);
+  const shared = collab ? initProseMirrorDoc(collab.fragment, schema) : null;
   const state = EditorState.create({
-    doc: elementsToDoc(elements),
+    doc: shared ? shared.doc : elementsToDoc(elements),
     plugins: [
       breakdownPlugin({ isActive: cb.getBreakdown, label: cb.tagLabel, removeLabel: cb.removeTagLabel }),
       autocompletePlugin(cb.getLang),
       menu.plugin,
       scriptKeymap({ openTypeMenu: menu.open, save: cb.onSave, find: cb.onFind }),
-      history(),
-      keymap({ 'Mod-z': undo, 'Mod-Shift-z': redo, 'Mod-y': redo, ...STYLE_KEYS }),
+      ...historyPlugins(collab, shared?.mapping),
       keymap(baseKeymap),
       autodetectPlugin(),
       idsPlugin(),
@@ -91,6 +113,8 @@ export function createEditor(mount: HTMLElement, elements: ScriptElement[], cb: 
     state,
     attributes: { spellcheck: 'true', class: 'script' },
     dispatchTransaction(tr) {
+      // y-prosemirror puede despachar desde un timeout después de cerrar el editor.
+      if (view.isDestroyed) return;
       const next = view.state.apply(tr);
       view.updateState(next);
       if (tr.docChanged) cb.onChange(docToElements(next.doc));

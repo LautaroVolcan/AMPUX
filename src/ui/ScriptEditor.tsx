@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import type { EditorView } from 'prosemirror-view';
-import { createEditor, type SelectionInfo } from '../editor';
+import { createEditor, type CollabOptions, type SelectionInfo } from '../editor';
 import { repaginate } from '../editor/pageView';
 import { pageGeometry } from '../pagination/metrics';
 import type { PaginationResult } from '../pagination/paginate';
@@ -13,6 +13,8 @@ export interface ScriptEditorHandle {
 
 interface Props {
   initial: ScriptElement[];
+  /** Edición en tiempo real (si no, solo copia local). */
+  collab?: CollabOptions;
   settings: ProjectSettings;
   mode: 'page' | 'draft' | 'cards';
   zoom: number;
@@ -55,7 +57,7 @@ export const ScriptEditor = forwardRef<ScriptEditorHandle, Props>(function Scrip
       onSelection: (info) => latest.current.props.onSelection(info),
       onSave: () => latest.current.props.onSave(),
       onFind: () => latest.current.props.onFind(),
-    });
+    }, props.collab);
     viewRef.current = view;
     view.focus();
     return () => {

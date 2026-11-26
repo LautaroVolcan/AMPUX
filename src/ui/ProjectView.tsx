@@ -3,7 +3,9 @@ import { useT } from '../i18n';
 import { flushPushes, getProject, saveProject } from '../storage/db';
 import type { CardColor, ElementType, Project, ProjectSettings, ScriptElement, Snapshot, TagCategory, TitlePage } from '../types';
 import { saveSnapshot } from '../storage/db';
-import { schema } from '../editor/schema';
+import { docToElements, schema } from '../editor/schema';
+import { yXmlFragmentToProseMirrorRootNode } from 'y-prosemirror';
+import { openShared, type SharedSession } from '../collab/shared';
 import { toCSV, type Table } from '../reports/reports';
 import { tableToPDF } from '../reports/pdf';
 import { BreakdownPanel, ReportsDialog, RevisionsDialog, VersionsDialog } from './Production';
@@ -32,22 +34,40 @@ interface Props {
   prefs: Prefs;
   setPrefs: (p: Partial<Prefs>) => void;
   onClose: () => void;
+  /** Nombre que ven los demás en el cursor (edición en tiempo real). */
+  username: string;
 }
 
 export function ProjectView(props: Props) {
-  const [project, setProject] = useState<Project | null>(null);
+  const [opened, setOpened] = useState<{ project: Project; shared: SharedSession | null } | null>(null);
   const [missing, setMissing] = useState(false);
   useEffect(() => {
-    getProject(props.projectId).then((p) => (p ? setProject(p) : setMissing(true)));
-  }, [props.projectId]);
+    let cancelled = false;
+    let session: SharedSession | null = null;
+    (async () => {
+      const p = await getProject(props.projectId);
+      if (cancelled) return;
+      if (!p) return setMissing(true);
+      session = await openShared(p, props.username);
+      if (cancelled) return void session?.close();
+      // Con tiempo real, el contenido sale del documento compartido (puede tener cambios de otros).
+      const project = session ? { ...p, elements: docToElements(yXmlFragmentToProseMirrorRootNode(session.fragment, schema)) } : p;
+      setOpened({ project, shared: session });
+    })();
+    return () => {
+      cancelled = true;
+      // Después de que el editor se desmonte y guarde.
+      if (session) setTimeout(() => void session!.close(), 0);
+    };
+  }, [props.projectId, props.username]);
   useEffect(() => {
     if (missing) props.onClose();
   }, [missing, props]);
-  if (!project) return <div className="loading" />;
-  return <Workspace {...props} initial={project} />;
+  if (!opened) return <div className="loading" />;
+  return <Workspace {...props} initial={opened.project} shared={opened.shared} />;
 }
 
-function Workspace({ initial, prefs, setPrefs, onClose }: Props & { initial: Project }) {
+function Workspace({ initial, shared, prefs, setPrefs, onClose }: Props & { initial: Project; shared: SharedSession | null }) {
   const t = useT();
   const editor = useRef<ScriptEditorHandle>(null);
   const [project, setProject] = useState<Project>(initial);
@@ -75,10 +95,12 @@ function Workspace({ initial, prefs, setPrefs, onClose }: Props & { initial: Pro
     timer.current = null;
     if (!dirty.current) return;
     dirty.current = false;
-    const next: Project = { ...projectRef.current, elements: elementsRef.current, pageCount: pagesRef.current, updatedAt: Date.now() };
+    const now = Date.now();
+    // En tiempo real se marca el guardado (ver Project.liveSavedAt).
+    const next: Project = { ...projectRef.current, elements: elementsRef.current, pageCount: pagesRef.current, updatedAt: now, ...(shared ? { liveSavedAt: now } : {}) };
     await saveProject(next);
     if (!dirty.current) setSaving(false);
-  }, []);
+  }, [shared]);
   const scheduleSave = useCallback(() => {
     dirty.current = true;
     setSaving(true);
@@ -407,6 +429,7 @@ function Workspace({ initial, prefs, setPrefs, onClose }: Props & { initial: Pro
           <ScriptEditor
             ref={editor}
             initial={initial.elements}
+            collab={shared ? { fragment: shared.fragment, awareness: shared.provider.awareness } : undefined}
             settings={project.settings}
             mode={prefs.mode}
             zoom={prefs.zoom}

@@ -2,6 +2,7 @@ import { Plugin, type Transaction } from 'prosemirror-state';
 import type { Node as PMNode } from 'prosemirror-model';
 import type { RevisionColor } from '../types';
 import { nodeText } from './schema';
+import { isRemote } from './remote';
 
 /**
  * Modo revisión: todo elemento cuyo texto o tipo cambia queda marcado con la revisión actual.
@@ -12,7 +13,7 @@ export function revisionPlugin(getRevision: () => RevisionColor | null) {
   return new Plugin({
     appendTransaction(trs, oldState, state) {
       const rev = getRevision();
-      if (!rev || !trs.some((tr) => tr.docChanged && !tr.getMeta('noRevision'))) return null;
+      if (!rev || !trs.some((tr) => tr.docChanged && !isRemote(tr) && !tr.getMeta('noRevision'))) return null;
 
       const old = new Map<string, PMNode>();
       oldState.doc.forEach((n) => n.attrs.id && old.set(n.attrs.id, n));
