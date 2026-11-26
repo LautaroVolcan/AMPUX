@@ -113,4 +113,14 @@ Decisiones que el spec no fijaba, tomadas eligiendo la opción más simple.
 - **Cursores de otros**: línea y nombre con un color por usuario (8 colores que no se confunden con el resaltador). Ocupan ancho y alto cero: no corren el texto ni la paginación (probado: las hojas siguen midiendo 11").
 - **Sin Supabase, sin sesión o sin conexión al abrir**: el editor funciona como siempre, solo con la copia local.
 - **Modo de prueba sin Supabase**: `?collab=local&name=Nombre` une las pestañas del mismo navegador (BroadcastChannel + localStorage).
-- **Pendiente (etapas 2 y 3)**: título, portada, ajustes y notas siguen con "gana el último que guarda"; offline real (hoy, editar sin conexión y volver aplica tu versión encima, y puede borrar lo que otro escribió mientras tanto; la solución es `y-indexeddb`); cambios de más de ~180 KB de una vez (pegar un guion entero) no viajan en vivo, los demás los ven al reabrir; dos usuarios pueden tocar el mismo color; indicador de quién está conectado.
+- **Pendiente**: ver "Tiempo real (etapa 3)".
+
+## Tiempo real (etapa 3: sin conexión y metadatos)
+- **Copia local del documento compartido** con `y-indexeddb`: una base de IndexedDB por guion (`ampux-ydoc-<id>`), aparte de la base `ampux` (no hay migración). Guarda cada cambio del `Y.Doc`. Se borra al borrar el guion.
+- **Al abrir**: copia local + nube, mezcladas por Yjs. Lo escrito sin conexión ya no se aplica encima del trabajo de otros: se mezcla letra por letra, como cuando los dos están en línea.
+- **Sin conexión al abrir**: si hay copia local, se edita en vivo sobre ella (el canal se conecta solo cuando vuelve la red y se intercambia lo que falta; el estado se sube a la nube apenas se puede, también con el evento `online`). Sin copia local, el editor abre sin tiempo real, como antes: **nunca se crea el documento desde el JSON sin conexión**, porque al mezclarlo con el de la nube el texto saldría duplicado.
+- Lo editado con la copia local cuenta como guardado en vivo (`liveSavedAt`): el documento ya lo tiene, así que el JSON no se vuelve a aplicar.
+- **Título, portada, ajustes y notas** van en el mismo `Y.Doc`, en el mapa `meta` (`src/collab/meta.ts`): `title`, y mapas `titlePage`, `settings` y `notes` (por escena). Cada campo se mezcla por separado (una persona cambia el autor y otra la fecha: quedan los dos). Dentro de un mismo campo gana el último; el texto del guion sí se mezcla letra por letra. Los documentos de la etapa 1 se completan con los metadatos del JSON al abrirlos. La carpeta y la fecha de creación siguen solo en el JSON.
+- Todo pasa por `update()` de `ProjectView`: escribe en el documento; los cambios de otros llegan por `onRemoteMeta` y se guardan también en el JSON.
+- **Pruebas locales**: `sessionStorage['ampux.simulateOffline'] = '1'` deja una pestaña sin conexión (con `?collab=local`); se vuelve con `removeItem` + evento `online`.
+- **Pendiente**: presencia (quién está conectado arriba, colores sin choque); cambios de más de ~180 KB de una vez no viajan en vivo (los demás los ven al reabrir); dos personas escribiendo en la misma nota a la vez: gana la última.
