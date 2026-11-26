@@ -32,7 +32,7 @@ Con Supabase configurado, AMPUX pide **usuario y contraseña**. Todos los usuari
 
 ### Tiempo real
 
-Dos o más personas pueden editar el mismo guion a la vez y ven los cursores de los demás. Título, portada, ajustes y notas también se comparten. Sin conexión se sigue editando con una copia en el navegador y, al volver, los cambios se mezclan con los de los demás. Necesita correr `supabase/realtime.sql` y apagar **Realtime → Settings → Allow public access**.
+Dos o más personas pueden editar el mismo guion a la vez y ven los cursores de los demás (y arriba, quién más está en el guion; clic para ir a su cursor). Título, portada, ajustes y notas también se comparten. Sin conexión se sigue editando con una copia en el navegador y, al volver, los cambios se mezclan con los de los demás. Necesita correr `supabase/realtime.sql` y apagar **Realtime → Settings → Allow public access**.
 
 Para probarlo en local sin Supabase: abrir dos pestañas con `http://localhost:5173/?collab=local&name=Ana` y `…&name=Beto`, y el mismo guion.
 

@@ -3,6 +3,7 @@ import { useT } from '../i18n';
 import { ELEMENT_TYPES, TEXT_STYLES, type ElementType, type TextStyle } from '../types';
 import { Icon } from './icons';
 import { getSyncStatus, onSyncStatus } from '../storage/db';
+import { initials, type Peer } from '../collab/presence';
 
 interface Props {
   title: string;
@@ -35,6 +36,9 @@ interface Props {
   /** Texto del indicador de revisión, si el modo revisión está activo. */
   revisionChip: string | null;
   revisionColor: string;
+  /** Otras personas con el guion abierto (tiempo real). */
+  peers: Peer[];
+  onPeer: (name: string) => void;
 }
 
 export type Dialog = 'settings' | 'titlePage' | 'stats' | 'reports' | 'revisions' | 'versions';
@@ -147,6 +151,29 @@ export function TopBar(p: Props) {
       </div>
 
       <div className="tb-group tb-right">
+        {p.peers.length > 0 && (
+          <>
+            <div className="peers" aria-label={t.top.peers(p.peers.map((x) => x.name))}>
+              {p.peers.slice(0, 4).map((peer) => (
+                <button
+                  key={peer.name}
+                  className="peer"
+                  style={{ '--peer-color': peer.color } as React.CSSProperties}
+                  title={t.top.peerHint(peer.name)}
+                  onClick={() => p.onPeer(peer.name)}
+                >
+                  {initials(peer.name)}
+                </button>
+              ))}
+              {p.peers.length > 4 && (
+                <span className="peer more" title={p.peers.slice(4).map((x) => x.name).join(', ')}>
+                  +{p.peers.length - 4}
+                </span>
+              )}
+            </div>
+            <span className="tb-sep" />
+          </>
+        )}
         <button className={`icon-btn${p.showNav ? ' on' : ''}`} onClick={p.onToggleNav} title={t.top.scenes} aria-label={t.top.scenes}>
           <Icon.sidebar />
         </button>

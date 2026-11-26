@@ -339,19 +339,21 @@ describe('Estado compartido guardado', () => {
   });
 
   it('lo escrito sin conexión se mezcla con lo de la nube al reabrir, sin duplicar', async () => {
+    // El JSON es de antes de todo esto (si fuera más nuevo y editado fuera del tiempo real, se aplicaría encima).
+    const old = project({ updatedAt: 1000 });
     const store = memoryStore();
     const cache = memoryCache();
     // Abro con conexión (queda la copia local) y después escribo sin conexión.
-    const { doc: mine } = await loadSharedDoc(project(), store, cache);
+    const { doc: mine } = await loadSharedDoc(old, store, cache);
     const xml = mine.getXmlFragment(FRAGMENT);
     const action = xml.get(1) as Y.XmlElement;
     (action.get(0) as Y.XmlText).insert(5, ' Sin red.');
     // Mientras tanto, otra persona escribe en la nube.
-    const { doc: theirs } = await loadSharedDoc(project(), store);
+    const { doc: theirs } = await loadSharedDoc(old, store);
     ((theirs.getXmlFragment(FRAGMENT).get(0) as Y.XmlElement).get(0) as Y.XmlText).insert(9, ' - NOCHE');
     await store.put('p1', Y.encodeStateAsUpdate(theirs), Date.now());
     // Reabro con conexión: copia local + nube.
-    const { doc: merged, offline } = await loadSharedDoc(project(), store, cache);
+    const { doc: merged, offline } = await loadSharedDoc(old, store, cache);
     expect(offline).toBe(false);
     expect(textOf(merged)).toEqual(['INT. CASA - NOCHE', 'Hola. Sin red.']);
   });

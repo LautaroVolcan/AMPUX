@@ -61,6 +61,8 @@ export const en: Dict = {
     stats: 'Statistics',
     find: 'Find',
     highlighter: 'Highlighter',
+    peers: (names: string[]) => `Also in this script: ${names.join(', ')}`,
+    peerHint: (name: string) => `${name} is in this script. Click to jump to their cursor.`,
     styles: { bold: 'Bold', italic: 'Italic', underline: 'Underline' },
     draft: 'Draft',
     paged: 'Pages',
