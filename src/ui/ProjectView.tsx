@@ -3,9 +3,9 @@ import { useT } from '../i18n';
 import { flushPushes, getProject, saveProject } from '../storage/db';
 import type { CardColor, ElementType, Project, ProjectSettings, ScriptElement, Snapshot, TagCategory, TitlePage } from '../types';
 import { saveSnapshot } from '../storage/db';
-import { docToElements, schema } from '../editor/schema';
-import { yXmlFragmentToProseMirrorRootNode } from 'y-prosemirror';
-import { openShared, type SharedSession } from '../collab/shared';
+import { schema } from '../editor/schema';
+import { openShared, projectFromDoc, type SharedSession } from '../collab/shared';
+import { META_KEYS, onRemoteMeta, writeMeta, type SharedMeta } from '../collab/meta';
 import { toCSV, type Table } from '../reports/reports';
 import { tableToPDF } from '../reports/pdf';
 import { BreakdownPanel, ReportsDialog, RevisionsDialog, VersionsDialog } from './Production';
@@ -50,8 +50,8 @@ export function ProjectView(props: Props) {
       if (!p) return setMissing(true);
       session = await openShared(p, props.username);
       if (cancelled) return void session?.close();
-      // Con tiempo real, el contenido sale del documento compartido (puede tener cambios de otros).
-      const project = session ? { ...p, elements: docToElements(yXmlFragmentToProseMirrorRootNode(session.fragment, schema)) } : p;
+      // Con tiempo real, texto, título, portada, ajustes y notas salen del documento compartido (puede tener cambios de otros).
+      const project = session ? projectFromDoc(p, session.doc) : p;
       setOpened({ project, shared: session });
     })();
     return () => {
@@ -123,7 +123,22 @@ function Workspace({ initial, shared, prefs, setPrefs, onClose }: Props & { init
     setProject((p) => ({ ...p, ...patch }));
     projectRef.current = { ...projectRef.current, ...patch };
     scheduleSave();
+    // Título, portada, ajustes y notas también van al documento compartido.
+    if (shared) {
+      const metaPatch = Object.fromEntries(META_KEYS.filter((k) => k in patch).map((k) => [k, patch[k]])) as Partial<SharedMeta>;
+      if (Object.keys(metaPatch).length) writeMeta(shared.doc, metaPatch);
+    }
   };
+
+  // Cambios de título, portada, ajustes o notas hechos por otra persona.
+  useEffect(() => {
+    if (!shared) return;
+    return onRemoteMeta(shared.doc, (meta) => {
+      setProject((p) => ({ ...p, ...meta }));
+      projectRef.current = { ...projectRef.current, ...meta };
+      scheduleSave();
+    });
+  }, [shared, scheduleSave]);
 
   // --- Callbacks del editor ---
   const onChange = useCallback(

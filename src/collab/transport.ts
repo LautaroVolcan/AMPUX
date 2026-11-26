@@ -44,17 +44,28 @@ export function supabaseTransport(projectId: string): CollabTransport | null {
 
 /**
  * Para probar sin Supabase: une las pestañas del mismo navegador (BroadcastChannel).
- * Se activa en desarrollo con `?collab=local` en la dirección.
+ * Se activa en desarrollo con `?collab=local` en la dirección. Con `sessionStorage['ampux.simulateOffline'] = '1'`
+ * la pestaña no manda ni recibe; al sacarlo y disparar el evento `online`, se vuelve a conectar.
  */
 export function localTransport(projectId: string): CollabTransport {
   const channel = new BroadcastChannel(`ampux:project:${projectId}`);
+  const offline = () => sessionStorage.getItem('ampux.simulateOffline') === '1';
   let handler: (event: string, data: Uint8Array) => void = () => undefined;
-  channel.onmessage = (m) => handler(m.data.e, new Uint8Array(m.data.d));
+  let connected: () => void = () => undefined;
+  channel.onmessage = (m) => !offline() && handler(m.data.e, new Uint8Array(m.data.d));
+  const onOnline = () => !offline() && connected();
+  window.addEventListener('online', onOnline);
   return {
-    send: (event, data) => channel.postMessage({ e: event, d: data }),
+    send: (event, data) => !offline() && channel.postMessage({ e: event, d: data }),
     onMessage: (cb) => void (handler = cb),
     // No hay conexión que esperar: se avisa en la próxima vuelta, cuando el proveedor ya está escuchando.
-    onConnect: (cb) => void setTimeout(cb, 0),
-    destroy: () => channel.close(),
+    onConnect: (cb) => {
+      connected = cb;
+      setTimeout(onOnline, 0);
+    },
+    destroy: () => {
+      window.removeEventListener('online', onOnline);
+      channel.close();
+    },
   };
 }

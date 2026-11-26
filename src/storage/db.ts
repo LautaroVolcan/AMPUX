@@ -142,6 +142,12 @@ export function flushPushes(): Promise<void> {
 async function removeLocal(id: string) {
   const database = await db();
   pending.delete(id);
+  // Copia local del documento de tiempo real (src/collab/shared.ts: localDocName).
+  try {
+    indexedDB.deleteDatabase(`ampux-ydoc-${id}`);
+  } catch {
+    /* sin IndexedDB (tests) */
+  }
   await database.delete('projects', id);
   const snaps = await database.getAllKeysFromIndex('snapshots', 'projectId', id);
   await Promise.all(snaps.map((k) => database.delete('snapshots', k)));

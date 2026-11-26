@@ -7,9 +7,9 @@ Decisiones técnicas: `DECISIONS.md`. Uso y estructura: `README.md`.
 ## Estado (última sesión: 25/11/2026)
 
 - **Las 4 fases del spec están hechas**: editor + paginación + PDF/Fountain (1), proyectos, navegador de escenas, portada, buscar/reemplazar, notas, borrador, oscuro, zoom, estadísticas (2), tarjetas, diálogo dual, `.fdx`, numeración bloqueada (3), desglose, reportes CSV/PDF, revisiones con colores, historial de versiones (4).
-- 133 tests en verde (`npm test`). Con *Big Fish* (fountain.io) da 122 páginas y cada hoja de la vista mide exactamente 11": vista y PDF coinciden.
+- 139 tests en verde (`npm test`). Con *Big Fish* (fountain.io) da 122 páginas y cada hoja de la vista mide exactamente 11": vista y PDF coinciden.
 - **Publicada**: https://ampux.lautaroferrandi.com/ (dominio propio en Pages; DNS en Cloudflare) — repo `LautaroVolcan/AMPUX`, rama `main`.
-- Después de la Fase 4: sincronización con Supabase y carpetas (16/10), dominio propio (17/10), resaltador, negrita/cursiva/subrayado y barra superior estable (25/11), login con usuario y contraseña (26/11), tiempo real etapa 1 (26/11, prototipo).
+- Después de la Fase 4: sincronización con Supabase y carpetas (16/10), dominio propio (17/10), resaltador, negrita/cursiva/subrayado y barra superior estable (25/11), login con usuario y contraseña (26/11), tiempo real etapas 1 y 3 (26/11: en vivo, sin conexión seguro, título/portada/ajustes/notas compartidos).
 - Forma de trabajo: cada cambio en una rama con su PR; Lautaro revisa y mergea.
 
 ## Etapa actual: pulido con uso real
@@ -20,7 +20,7 @@ Ideas pendientes que ya surgieron (sin priorizar):
 - Revisiones con granularidad por línea (hoy es por elemento).
 - Mover escenas con el teclado en el navegador lateral.
 - Probar el `.fdx` exportado en Final Draft real (solo se verificó ida y vuelta en AMPUX).
-- Sincronización con Supabase y carpetas (sesión 16/10/2026). Tiempo real: etapa 1 (prototipo) hecha en `src/collab/` (Yjs + y-prosemirror, Supabase Realtime, tabla `project_docs`). Siguen: etapa 2 presencia (quién está conectado, colores sin choque) y etapa 3 robustez (título/portada/ajustes/notas en Yjs, offline con y-indexeddb, cambios grandes). Detalle en DECISIONS.md.
+- Sincronización con Supabase y carpetas (sesión 16/10/2026). Tiempo real: etapa 1 (prototipo) hecha en `src/collab/` (Yjs + y-prosemirror, Supabase Realtime, tabla `project_docs`). Etapa 3 hecha (copia local con y-indexeddb, metadatos en el mapa `meta`). Sigue: etapa 2 presencia (quién está conectado, colores sin choque) y cambios de más de ~180 KB. Detalle en DECISIONS.md.
 
 ## Reglas importantes
 
@@ -31,7 +31,7 @@ Ideas pendientes que ya surgieron (sin priorizar):
 - Las tablas de Tab/Enter viven en `src/editor/flow.ts`.
 - El resaltador vive en `src/editor/highlighter.ts` (mark `highlight` en `schema.ts`, campo `highlights` en el modelo).
 - Negrita/cursiva/subrayado: marks `bold`/`italic`/`underline` en `schema.ts`, comandos en `src/editor/textStyles.ts`, campo `styles` en el modelo. Fountain en `src/formats/fountain/emphasis.ts`; tramos compartidos (FDX, PDF) en `src/formats/styleRuns.ts`.
-- **Tiempo real** (`src/collab/`): los plugins que reaccionan a cambios deben ignorar los remotos (`hasLocalChange` / `isRemote` en `src/editor/remote.ts`). Nada que se dibuje dentro del texto puede ocupar ancho ni alto (rompe las hojas de 11"). Para probar sin Supabase: `?collab=local&name=X` en dos pestañas.
+- **Tiempo real** (`src/collab/`): los plugins que reaccionan a cambios deben ignorar los remotos (`hasLocalChange` / `isRemote` en `src/editor/remote.ts`). Nada que se dibuje dentro del texto puede ocupar ancho ni alto (rompe las hojas de 11"). Para probar sin Supabase: `?collab=local&name=X` en dos pestañas; `sessionStorage['ampux.simulateOffline']='1'` deja una pestaña sin conexión. Título/portada/ajustes/notas: siempre por `update()` (escribe también en el documento compartido).
 - Vista previa para Lautaro: compilar con `VITE_BASE=./`, subir `dist/` a la rama huérfana `preview` y pasarle el link de raw.githack fijado al commit (`https://raw.githack.com/LautaroVolcan/AMPUX/<sha>/index.html`). Sin variables de Supabase guarda solo en el navegador; con `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` del proyecto real (las da el MCP de Supabase) pide login y usa los guiones reales.
 
 ## Trabajo con Lautaro
